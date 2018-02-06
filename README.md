@@ -63,6 +63,12 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to (Current Room Temperature) - 4 degrees |
 
 
+## Known issues | TODO
+
+- At the moment, only "Celsius" is supported
+- Better polling handling
+
+
 ## Credits
 
 This plugin was initially forked from and inspired by [homebridge-tado-ac](https://github.com/nitaybz/homebridge-tado-ac) by @nitaybz
