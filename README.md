@@ -20,7 +20,7 @@ With the states "Heat" and "Cool" you can heat up or cool down to a certain temp
 
 With the "Automatic" state you remove the "manual" control of the thermostat and setting it back to the automatic mode
 
-See [Images](https://github.com/SeydX/homebridge-tado-thermostat/images/) for more details.
+See [Images](https://github.com/SeydX/homebridge-tado-thermostat/tree/master/images/) for more details.
 
 
 ## Installation instructions
