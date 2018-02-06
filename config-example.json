@@ -1,0 +1,18 @@
+{
+ "bridge": {
+   ...
+},
+ "accessories": [
+   ...
+],
+ "platforms": [
+   {
+    "platform":"TadoThermostat",
+    "name":"Thermostat",
+    "username":"TadoUserName",
+    "password":"TadoPassword",
+    "heatValue": 5,
+    "coolValue": 3
+    }
+ ]
+}
