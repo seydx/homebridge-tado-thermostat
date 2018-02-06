@@ -59,14 +59,26 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | name | no | Name for the Thermostat. Will be used as part of the accessory name.  |
 | username | Yes | Tado Login Username |
 | password | Yes | Tado Login Password |
-| heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to (Current Room Temperature) + 4 degrees|
-| coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to (Current Room Temperature) - 4 degrees |
+| heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to (Current Room Temperature) + 4 degrees (Default: 4) |
+| coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to (Current Room Temperature) - 4 degrees (Default: 4) |
 
 
 ## Known issues | TODO
 
-- At the moment, only "Celsius" is supported
-- Better polling handling
+- 
+
+
+
+## Contributing
+
+You can contribute to this homebridge plugin in following ways:
+
+- [Report issues](https://github.com/SeydX/homebridge-tado-thermostat/issues) and help verify fixes as they are checked in.
+- Review the [source code changes](https://github.com/SeydX/homebridge-tado-thermostat/pulls).
+- Contribute bug fixes.
+- Contribute changes to extend the capabilities
+
+Pull requests are accepted.
 
 
 ## Credits
