@@ -27,7 +27,7 @@ See [Images](https://github.com/SeydX/homebridge-tado-thermostat/tree/master/ima
 
 After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
 
- ```sudo npm install -g homebridge-tado-thermostat```
+ ```sudo npm install -g homebridge-tado-thermostat@latest```
  
  
  ## Example config.json:
