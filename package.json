@@ -1,0 +1,60 @@
+{
+  "_from": "homebridge-tado-termostat@thermostat",
+  "_id": "homebridge-tado-thermostat@1.0.0",
+  "_inBundle": false,
+  "_location": "/homebridge-tado-thermostat",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "homebridge-tado-thermostat@latest",
+    "name": "homebridge-tado-termostat",
+    "escapedName": "homebridge-tado-termostat",
+    "rawSpec": "latest",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/homebridge-tado-termostat/-/homebridge-tado-termostat-1.0.0.tgz",
+  "_spec": "homebridge-tado-termostat@latest",
+  "_where": "/home/pi",
+  "author": {
+    "name": "SeydX",
+    "url": "https://github.com/SeydX/homebridge-tado-termostat"
+  },
+  "bugs": {
+    "url": "https://github.com/SeydX/homebridge-tado-termostat/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "async": "*",
+    "node-persist": "0.0.8"
+  },
+  "deprecated": false,
+  "description": "homebridge-tado-termostat",
+  "devDependencies": {},
+  "engines": {
+    "homebridge": ">=0.2.0",
+    "node": ">=0.12.0"
+  },
+  "homepage": "https://github.com/SeydX/homebridge-tado-termostat#readme",
+  "keywords": [
+    "homebridge-plugin",
+    "tado",
+    "thermostat"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "homebridge-tado-termostat",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SeydX/homebridge-tado-termostat.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "1.0.0"
+}
