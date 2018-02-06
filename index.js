@@ -27,6 +27,7 @@ function TadoThermostatPlatform(log, config, api){
     this.interval = (config["interval"]*1000) || 3000;
     this.coolValue = config["coolValue"] || 4;
     this.heatValue = config["heatValue"] || 4;
+    this.tempUnit = "";
 
     this.storage = require('node-persist');
     this.storage.initSync({
@@ -97,6 +98,46 @@ TadoThermostatPlatform.prototype = {
              } else next()
           }, // END HomeID
 
+
+            // get temperatureUnit
+            function(next){
+                var options = {
+                    host: 'my.tado.com',
+                    path: '/api/v2/homes/' + self.homeID + '?password=' + self.password + '&username=' + self.username,
+                    method: 'GET'
+                };
+                function fetchTemperatureUnit(next){
+                    https.request(options, function(response){
+                        var strData = '';
+                        response.on('data', function(chunk) {
+                            strData += chunk;
+                        });
+                        response.on('end', function() {
+                            try {
+                                var data = JSON.parse(strData);
+                                self.tempUnit = data.temperatureUnit;
+                                //self.log("Temperature Unit is: " + self.tempUnit)
+                            }
+                            catch(e){
+                                self.log("Could not retrieve Temperature Unit, error:" + e);
+                                self.log("Fetching Temperature Unit failed - Trying again...");
+                                setTimeout(function(){
+                                    fetchTemperatureUnit(next)
+                                }, 10000)
+                            }
+                            next()
+                        });
+                    }).on('error', (e) => {
+                        console.error(e);
+                        console.log("Fetching Temperature Unit failed - Trying again...");
+                        setTimeout(function(){
+                            fetchTemperatureUnit(next)
+                        }, 10000)
+                      }).end();
+                }
+                fetchTemperatureUnit(next)
+            }, //END tempUnit
+
             // get Zones
           function(next){
              var options = {
@@ -125,7 +166,8 @@ TadoThermostatPlatform.prototype = {
                                          polling: self.polling,
                                          interval: self.interval,
                                          coolValue: self.coolValue,
-                                         heatValue: self.heatValue
+                                         heatValue: self.heatValue,
+                                         tempUnit: self.tempUnit
                                      }
                                     self.log("Found new Zone: "+ toConfig.name + " (" + toConfig.id + ") ...")
                                     zonesArray.push(toConfig);
@@ -194,6 +236,7 @@ function TadoThermostatAccessory(log, config){
     this.interval = config.interval;
     this.coolValue = config.coolValue;
     this.heatValue = config.heatValue;
+    this.tempUnit = config.tempUnit;
 
     this.storage = require("node-persist");
     this.storage.initSync({
@@ -208,7 +251,7 @@ function TadoThermostatAccessory(log, config){
         
     ////Thermostat
         
-    this.Thermostat = new Service.Thermostat(this.zoneName + " Heater");
+    this.Thermostat = new Service.Thermostat(this.zoneName + " Heizung");
 
     this.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState)
         .on('get', this.getCurrentHeatingCoolingState.bind(this)) 
@@ -229,8 +272,8 @@ function TadoThermostatAccessory(log, config){
 
     this.Thermostat.getCharacteristic(Characteristic.CurrentTemperature)
         .setProps({
-            minValue: -100,
-            maxValue: 100,
+            minValue: -150,
+            maxValue: 150,
             minStep: 1
         })
         .on('get', this.getCurrentTemperature.bind(this));
@@ -366,8 +409,11 @@ TadoThermostatAccessory.prototype.getCurrentTemperature = function(callback){
 	    
         if (err) callback (err)
         else {
-            //accessory.log(accessory.zoneName + " Current Temperature is " + data.sensorDataPoints.insideTemperature.celsius + "ºC");
-            callback(null, data.sensorDataPoints.insideTemperature.celsius);
+                if(accessory.tempUnit == "CELSIUS"){
+                  callback(null, data.sensorDataPoints.insideTemperature.celsius);
+                }else{
+                  callback(null, data.sensorDataPoints.insideTemperature.fahrenheit);
+                }
         }
     })
 }
@@ -379,12 +425,15 @@ TadoThermostatAccessory.prototype.getTargetTemperature = function(callback){
 	    
         if (err) callback (err)
         else {
-	        if(data.setting.power == "ON"){
-	            //accessory.log(accessory.zoneName + " Target Temperature is " + data.setting.temperature.celsius + "ºC");
+              if(data.setting.power = "ON"){
+                if(accessory.tempUnit == "CELSIUS"){
 	            callback(null, data.setting.temperature.celsius);
-	        }else{
-		        callback()
-	        }
+                }else{
+	            callback(null, data.setting.temperature.fahrenheit);
+                }
+              }else{
+		    callback(null, null)
+              }
         }
     })
 }
@@ -392,8 +441,14 @@ TadoThermostatAccessory.prototype.getTargetTemperature = function(callback){
 TadoThermostatAccessory.prototype.getTemperatureDisplayUnits = function(callback){
     var accessory = this;
     
-    //accessory.log("The current temperature display unit is ºC");
-    callback(null, Characteristic.TemperatureDisplayUnits.CELSIUS);
+    //accessory.log("The current temperature display unit is " + accessory.tempUnit);
+
+    if(accessory.tempUnit == "CELSIUS"){
+       callback(null, Characteristic.TemperatureDisplayUnits.CELSIUS);
+    }else{
+       callback(null, Characteristic.TemperatureDisplayUnits.FAHRENHEIT);
+    }
+
 }
 
 TadoThermostatAccessory.prototype.getCurrentRelativeHumidity = function(callback){
