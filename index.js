@@ -426,7 +426,7 @@ TadoThermostatAccessory.prototype.getTargetTemperature = function(callback){
 	    
         if (err) callback (err)
         else {
-              if(data.setting.power = "ON"){
+              if(data.setting.power == "ON"){
                 if(accessory.tempUnit == "CELSIUS"){
 	            callback(null, data.setting.temperature.celsius);
                 }else{
