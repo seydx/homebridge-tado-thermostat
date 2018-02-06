@@ -296,7 +296,8 @@ function TadoThermostatAccessory(log, config){
 	}, accessory.interval)
 
     this.Thermostat.getCharacteristic(Characteristic.TemperatureDisplayUnits)
-        .on('get', this.getTemperatureDisplayUnits.bind(this));
+        .on('get', this.getTemperatureDisplayUnits.bind(this))
+        .on('set', this.setTemperatureDisplayUnits.bind(this));
 
     this.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity)
         .setProps({
@@ -634,4 +635,11 @@ TadoThermostatAccessory.prototype.setTargetTemperature = function(value, callbac
 		            callback(e)
 		            return
 		          }).end(body);
+}
+
+TadoThermostatAccessory.prototype.setTemperatureDisplayUnits = function(value, callback){
+    var accessory = this;
+
+    accessory.temperatureDisplayUnits = value;
+    callback(null, accessory.temperatureDisplayUnits)
 }
