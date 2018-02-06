@@ -38,7 +38,7 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
       ...
   },
   "platforms": [
-   {
+    {
     "platform":"TadoThermostat",
     "name":"Thermostat",
     "username":"TadoUserName",
