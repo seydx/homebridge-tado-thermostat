@@ -28,6 +28,8 @@ function TadoThermostatPlatform(log, config, api){
     this.coolValue = config["coolValue"] || 4;
     this.heatValue = config["heatValue"] || 4;
     this.tempUnit = "";
+    this.targetMinValue = "";
+    this.targetMaxValue ="";
 
     this.storage = require('node-persist');
     this.storage.initSync({
@@ -116,6 +118,15 @@ TadoThermostatPlatform.prototype = {
                         try {
                             var data = JSON.parse(strData);
                             self.tempUnit = data.temperatureUnit;
+
+                            if (self.tempUnit = "CELSIUS"){
+                               self.targetMinValue = 5;
+                               self.targetMaxValue = 25;
+                            }else{
+                               self.targetMinValue = 41;
+                               self.targetMaxValue = 77;
+                            }
+
                             //self.log("Temperature Unit is: " + self.tempUnit)
                         }
                         catch(e){
@@ -167,7 +178,9 @@ TadoThermostatPlatform.prototype = {
                                          interval: self.interval,
                                          coolValue: self.coolValue,
                                          heatValue: self.heatValue,
-                                         tempUnit: self.tempUnit
+                                         tempUnit: self.tempUnit,
+                                         targetMinValue: self.targetMinValue,
+                                         targetMaxValue: self.targetMaxValue
                                      }
                                     self.log("Found new Zone: "+ toConfig.name + " (" + toConfig.id + ") ...")
                                     zonesArray.push(toConfig);
@@ -228,6 +241,8 @@ function TadoThermostatAccessory(log, config){
     this.coolValue = config.coolValue;
     this.heatValue = config.heatValue;
     this.tempUnit = config.tempUnit;
+    this.targetMinValue = config.targetMinValue;
+    this.targetMaxValue = config.targetMaxValue;
 
     this.storage = require("node-persist");
     this.storage.initSync({
@@ -246,7 +261,6 @@ function TadoThermostatAccessory(log, config){
     this.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState)
         .on('get', this.getCurrentHeatingCoolingState.bind(this)) 
      
-    
     setInterval(function(){
     	accessory.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).getValue();
 	}, accessory.interval)
@@ -273,8 +287,8 @@ function TadoThermostatAccessory(log, config){
         
     this.Thermostat.getCharacteristic(Characteristic.TargetTemperature)
         .setProps({
-            minValue: 5,
-            maxValue: 25,
+            minValue: this.targetMinValue,
+            maxValue: this.targetMaxValue,
             minStep: 0.1
         })
         .on('get', this.getTargetTemperature.bind(this))
@@ -424,7 +438,11 @@ TadoThermostatAccessory.prototype.getTargetTemperature = function(callback){
 	            	callback(null, data.setting.temperature.fahrenheit);
                 }
               }else{
-		    callback(null, null)
+                if(accessory.tempUnit == "CELSIUS"){
+	            	callback(null, data.sensorDataPoints.insideTemperature.celsius);
+                }else{
+	            	callback(null, data.sensorDataPoints.insideTemperature.fahrenheit);
+                }
               }
         }
     })
@@ -468,8 +486,7 @@ TadoThermostatAccessory.prototype.getCurrentRelativeHumidity = function(callback
 TadoThermostatAccessory.prototype.setTargetHeatingCoolingState = function(state, callback){
     var self = this;
     
-    self.getCurrentState(function(err, data) {
-	        
+    self.getCurrentState(function(err, data) {      
         switch(state){
 	        case Characteristic.TargetHeatingCoolingState.OFF:
 		        self.log(self.zoneName + ": Switch OFF");
@@ -502,8 +519,10 @@ TadoThermostatAccessory.prototype.setTargetHeatingCoolingState = function(state,
 	        
 	        case Characteristic.TargetHeatingCoolingState.HEAT:
 		        self.log(self.zoneName + ": HEAT activated");
-				
-				var newMinValue = Math.round(data.sensorDataPoints.insideTemperature.celsius) + self.heatValue;
+
+                        var newMinValue = Math.round(data.sensorDataPoints.insideTemperature.celsius) + self.heatValue;
+		                
+		        //self.log("Fahrenheit: " + Math.round(((data.sensorDataPoints.insideTemperature.celsius + self.heatValue)*1.8+32) * 10.0 ) / 10.0);
 				
 		        body = {
 		                 "setting": {
@@ -537,8 +556,8 @@ TadoThermostatAccessory.prototype.setTargetHeatingCoolingState = function(state,
 	        case Characteristic.TargetHeatingCoolingState.COOL:
 		        self.log(self.zoneName + ": COOL activated");
 				
-				var newMinValue = Math.round(data.sensorDataPoints.insideTemperature.celsius) - self.coolValue;
-				
+                        var newMinValue = Math.round(data.sensorDataPoints.insideTemperature.celsius) - self.heatValue;
+                        
 		        body = {
 		                 "setting": {
 		                   "type": "HEATING",
@@ -598,7 +617,7 @@ TadoThermostatAccessory.prototype.setTargetTemperature = function(value, callbac
 	
 	    accessory.getCurrentState(function(err, data) {
 
-				var newTemp = Math.round(value);
+			var newTemp = Math.round(value);
 				
 		        body = {
 		                 "setting": {
