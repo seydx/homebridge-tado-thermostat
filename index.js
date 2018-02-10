@@ -15,21 +15,24 @@ module.exports = function(homebridge) {
 }
 
 function TadoThermostatPlatform(log, config, api){
+
+    if (!config) {
+        log.warn("Ignoring Tado Thermostat Platform setup because it is not configured");
+        this.disabled = true;
+        return;
+    }
+
     log("Tado Thermostat Platform Init");
 
     this.log = log;
     this.config = config;
-    this.name = config["name"] || "Thermostat";
+    this.name = config["name"] || "Tado Thermostat";
     this.username = config["username"];
     this.password = config["password"];
     this.homeID = config["homeID"] || "";
-    this.polling = config["polling"] === true;
     this.interval = (config["interval"]*1000) || 3000;
     this.coolValue = config["coolValue"] || 4;
     this.heatValue = config["heatValue"] || 4;
-    this.tempUnit = "";
-    this.targetMinValue = "";
-    this.targetMaxValue ="";
 
     this.storage = require('node-persist');
     this.storage.initSync({
@@ -174,7 +177,6 @@ TadoThermostatPlatform.prototype = {
                                          homeID: self.homeID,
                                          username: self.username,
                                          password: self.password,
-                                         polling: self.polling,
                                          interval: self.interval,
                                          coolValue: self.coolValue,
                                          heatValue: self.heatValue,
@@ -184,10 +186,8 @@ TadoThermostatPlatform.prototype = {
                                      }
                                     self.log("Found new Zone: "+ toConfig.name + " (" + toConfig.id + ") ...")
                                     zonesArray.push(toConfig);
+
                                     
-                                    //Push new Accessory
-                                    var tadoAccessory = new TadoThermostatAccessory(self.log, zonesArray[i])
-				    accessoriesArray.push(tadoAccessory);
                                  }
                                  
                              }
@@ -211,7 +211,28 @@ TadoThermostatPlatform.prototype = {
                    }).end();
              }
              fetchZones(next)
-          }
+          },
+          
+        // Create Accessories  
+        function(zonesArray, next){
+	          
+	        async.forEachOf(zonesArray, function (zone, key, step) {
+		          
+		        function pushMyAccessories(step){
+			        
+			        var tadoAccessory = new TadoThermostatAccessory(self.log, zone)
+					accessoriesArray.push(tadoAccessory);
+					step()
+			
+				} pushMyAccessories(step)
+				
+			},	function(err){
+				if (err) next(err)
+				else next()
+			})
+
+		}
+		
        ], function(err, result){
              if(err) callback(err)
              else callback(accessoriesArray);
@@ -236,7 +257,6 @@ function TadoThermostatAccessory(log, config){
     this.homeID = config.homeID;
     this.username = config.username;
     this.password = config.password;
-    this.polling = config.polling;
     this.interval = config.interval;
     this.coolValue = config.coolValue;
     this.heatValue = config.heatValue;
@@ -618,7 +638,10 @@ TadoThermostatAccessory.prototype.setTargetTemperature = function(value, callbac
 	    accessory.getCurrentState(function(err, data) {
 
 			var newTemp = Math.round(value);
-				
+
+			var mystate = accessory.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).value;
+
+			if(mystate != 0){
 		        body = {
 		                 "setting": {
 		                   "type": "HEATING",
@@ -646,7 +669,9 @@ TadoThermostatAccessory.prototype.setTargetTemperature = function(value, callbac
 		            callback(e)
 		            return
 		          }).end(body);
-		          
+			}else{
+				callback()
+			}
     })
 }
 
