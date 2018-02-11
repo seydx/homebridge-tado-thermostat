@@ -16,12 +16,6 @@ module.exports = function(homebridge) {
 
 function TadoThermostatPlatform(log, config, api){
 
-    if (!config) {
-        log.warn("Ignoring Tado Thermostat Platform setup because it is not configured");
-        this.disabled = true;
-        return;
-    }
-
     log("Tado Thermostat Platform Init");
 
     this.log = log;
@@ -640,8 +634,9 @@ TadoThermostatAccessory.prototype.setTargetTemperature = function(value, callbac
 			var newTemp = Math.round(value);
 
 			var mystate = accessory.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).value;
+			var tarstate = accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).value;
 
-			if(mystate != 0){
+			if(mystate != 0 && tarstate != 0 && tarstate != 3){
 		        body = {
 		                 "setting": {
 		                   "type": "HEATING",
