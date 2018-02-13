@@ -383,9 +383,9 @@ TadoThermostatAccessory.prototype.getCurrentHeatingCoolingState = function(callb
         else {
 			if(data.setting.power == "ON"){
 				
-				if (data.sensorDataPoints.insideTemperature.celsius > data.setting.temperature.celsius){
+				if (Math.round(data.sensorDataPoints.insideTemperature.celsius) > Math.round(data.setting.temperature.celsius)){
 					callback(null, Characteristic.CurrentHeatingCoolingState.COOL);
-				} else if (data.sensorDataPoints.insideTemperature.celsius < data.setting.temperature.celsius){
+				} else if (Math.round(data.sensorDataPoints.insideTemperature.celsius) < Math.round(data.setting.temperature.celsius)){
 					callback(null, Characteristic.CurrentHeatingCoolingState.HEAT);
 				} else {
 					callback(null, Characteristic.CurrentHeatingCoolingState.AUTO)
@@ -407,16 +407,16 @@ TadoThermostatAccessory.prototype.getTargetHeatingCoolingState = function(callba
         else {
 			if(data.setting.power == "ON"){
 				
-				if(data.sensorDataPoints.insideTemperature.celsius > data.setting.temperature.celsius){
-					callback(null, Characteristic.CurrentHeatingCoolingState.COOL);
-				} else if (data.sensorDataPoints.insideTemperature.celsius < data.setting.temperature.celsius) {
-					callback(null, Characteristic.CurrentHeatingCoolingState.HEAT);
+				if(Math.round(data.sensorDataPoints.insideTemperature.celsius) > Math.round(data.setting.temperature.celsius)){
+					callback(null, Characteristic.TargetHeatingCoolingState.COOL);
+				} else if (Math.round(data.sensorDataPoints.insideTemperature.celsius) < Math.round(data.setting.temperature.celsius)) {
+					callback(null, Characteristic.TargetHeatingCoolingState.HEAT);
 				} else {
-					callback(null, Characteristic.CurrentHeatingCoolingState.AUTO);
+					callback(null, Characteristic.TargetHeatingCoolingState.AUTO);
 				}
 				
 			} else {
-				callback(null, Characteristic.CurrentHeatingCoolingState.OFF);
+				callback(null, Characteristic.TargetHeatingCoolingState.OFF);
 			}
         }
     })
