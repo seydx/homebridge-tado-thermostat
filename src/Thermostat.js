@@ -13,7 +13,9 @@ class THERMOSTAT {
 
         var platform = this;
 
+        this.api = api;
         this.log = log;
+        this.config = config;
         this.zoneName = config.name;
         this.zoneID = config.id;
         this.name = config.name;
@@ -27,7 +29,6 @@ class THERMOSTAT {
         this.tempUnit = config.tempUnit;
         this.targetMinValue = config.targetMinValue;
         this.targetMaxValue = config.targetMaxValue;
-        this.batteryState = config.batteryState;
 
         this.get = new HK_REQS(platform.username, platform.password, platform.homeID, {
             "token": process.argv[2]
@@ -45,9 +46,19 @@ class THERMOSTAT {
             .setCharacteristic(Characteristic.SerialNumber, 'Tado Serial Number');
 
         this.Thermostat = new Service.Thermostat(this.zoneName + " Thermostat");
+        this.BatteryService = new Service.BatteryService();
+
+        this.BatteryService.getCharacteristic(Characteristic.ChargingState)
+            .updateValue(2);
+
+        this.BatteryService.getCharacteristic(Characteristic.BatteryLevel)
+            .on('get', this.getBatteryLevel.bind(this));
+
+        this.BatteryService.getCharacteristic(Characteristic.StatusLowBattery)
+            .on('get', this.getStatusLowBattery.bind(this));
 
         this.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState)
-            .on('get', this.getCurrentHeatingCoolingState.bind(this))
+            .on('get', this.getCurrentHeatingCoolingState.bind(this));
 
         this.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState)
             .on('get', this.getTargetHeatingCoolingState.bind(this))
@@ -99,12 +110,88 @@ class THERMOSTAT {
                 setTimeout(function() {
                         accessory.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).getValue();
                         poll()
-                    }, 1 * 1000 * 60 * 60) //1h
+                    }, 1000 * 60 * 60) //1h
             })();
         }
 
-        return [this.informationService, this.Thermostat];
+        if (this.polling) {
+            (function poll() {
+                setTimeout(function() {
+                        accessory.BatteryService.getCharacteristic(Characteristic.BatteryLevel).getValue();
+                        accessory.BatteryService.getCharacteristic(Characteristic.StatusLowBattery).getValue();
+                        poll()
+                    }, 1000 * 60 * 60 * 24) //24h
+            })();
+        }
 
+        return [this.informationService, this.Thermostat, this.BatteryService];
+
+    }
+
+    getBatteryLevel(callback) {
+        var self = this;
+
+        self.get.HOME_ZONES()
+            .then(response => {
+
+                var zones = response;
+
+                for (var i = 0; i < zones.length; i++) {
+
+                    if (zones[i].name.match(self.zoneName)) {
+                        var batteryStatus = zones[i].devices[0].batteryState;
+
+                        if (batteryStatus == "NORMAL") {
+                            callback(null, 100)
+                        } else {
+                            callback(null, 10)
+                        }
+                    }
+                }
+
+            })
+            .catch(err => {
+
+                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                    self.log(self.zoneName + " Battery: No connection...");
+                } else {
+                    self.log(self.zoneName + " Battery: Error: " + err);
+                }
+
+            });
+    }
+
+    getStatusLowBattery(callback) {
+        var self = this;
+
+        self.get.HOME_ZONES()
+            .then(response => {
+
+                var zones = response;
+
+                for (var i = 0; i < zones.length; i++) {
+
+                    if (zones[i].name.match(self.zoneName)) {
+                        var batteryStatus = zones[i].devices[0].batteryState;
+
+                        if (batteryStatus == "NORMAL") {
+                            callback(null, 0)
+                        } else {
+                            callback(null, 1)
+                        }
+                    }
+                }
+
+            })
+            .catch(err => {
+
+                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                    self.log(self.zoneName + " Battery: No connection...");
+                } else {
+                    self.log(self.zoneName + " Battery: Error: " + err);
+                }
+
+            });
     }
 
     getCurrentState(callback) {
@@ -138,7 +225,7 @@ class THERMOSTAT {
         var accessory = this;
 
         accessory.getCurrentState(function(err, data) {
-	        
+
             if (err) callback(err)
             else {
                 if (data.setting.power == "ON") {
@@ -384,7 +471,7 @@ class THERMOSTAT {
             accessory.get = new HK_REQS(accessory.username, accessory.password, accessory.homeID, {
                 "token": process.argv[2]
             }, accessory.zoneID, accessory.heatValue, accessory.coolValue, accessory.currentValue, value);
-            
+
             var tarstate = accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).value;
 
             if (tarstate == 0) {
