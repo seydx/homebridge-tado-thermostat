@@ -3,7 +3,6 @@ var rp = require("request-promise"),
 
 var HK_REQS = require('./src/Requests.js');
 var Tado_Thermostat = require('./src/Thermostat.js');
-var Tado_Service = require('./src/TadoService.js');
 
 var Accessory, Service, Characteristic;
 
@@ -30,8 +29,6 @@ function TadoThermostatPlatform(log, config, api) {
     this.interval = (config["interval"] * 1000) || 3000;
     this.coolValue = config["coolValue"] || 4;
     this.heatValue = config["heatValue"] || 4;
-
-    //HK_TYPES.registerWith(api);
 }
 
 TadoThermostatPlatform.prototype = {
@@ -150,7 +147,6 @@ TadoThermostatPlatform.prototype = {
                                         id: zones[i].id,
                                         name: zones[i].name,
                                         homeID: self.homeID,
-                                        batteryState: zones[i].devices[0].batteryState,
                                         username: self.username,
                                         password: self.password,
                                         polling: self.polling,
@@ -210,24 +206,6 @@ TadoThermostatPlatform.prototype = {
                     else next()
                 })
 
-            },
-
-            // set Battery Service
-            function(next) {
-
-                var serviceConfig = {
-                    name: "Tado Battery",
-                    homeID: self.homeID,
-                    username: self.username,
-                    password: self.password,
-                    polling: self.polling,
-                    interval: self.interval
-                }
-
-                var tadoService = new Tado_Service(self.log, serviceConfig, self.api)
-                accessoriesArray.push(tadoService);
-
-                next();
             }
 
         ], function(err, result) {
