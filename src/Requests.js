@@ -104,6 +104,35 @@ class TADO_REQ {
 
     }
 
+    HOME_DEVICES() {
+
+        var self = this;
+
+        this.tado = {
+
+            token: null,
+
+            get: function() {
+
+                return rp({
+
+                    "method": "GET",
+                    "uri": "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/devices",
+                    "qs": {
+                        "password": self.password,
+                        "username": self.username
+                    },
+                    "json": true
+
+                });
+            }
+        }
+
+        self.tado.token = self.params.token;
+        return self.tado.get();
+
+    }
+
     STATE() {
 
         var self = this;
