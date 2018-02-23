@@ -12,7 +12,9 @@
     "username":"TadoUserName",
     "password":"TadoPassword",
     "heatValue": 5,
-    "coolValue": 3
+    "coolValue": 3,
+    "polling": true,
+    "interval": 3
     }
  ]
 }
