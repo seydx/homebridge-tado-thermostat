@@ -46,7 +46,9 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "username":"TadoUserName",
     "password":"TadoPassword",
     "heatValue": 5,
-    "coolValue": 3
+    "coolValue": 3,
+    "polling": true,
+    "interval": 3
     }
   ]
 }
@@ -63,6 +65,8 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | password | Yes | Tado Login Password |
 | heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to (Current Room Temperature) + 4 degrees (Default: 4) |
 | coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to (Current Room Temperature) - 4 degrees (Default: 4) |
+| polling | No | Checking states of the thermostats (Default: true)  |
+| interval | No | Interval for polling in seconds (Default: 3s) |
 
 
 ## Known issues | TODO
