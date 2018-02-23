@@ -1,6 +1,6 @@
 # Homebridge Plugin for Tado Smart Thermostats
 
-A platform that exposes all Tado Smart Thermostats to HomeKit via [Homebridge](https://github.com/nfarina/homebridge) with additional modes like Heat, Cool, Off and Automatic mode. It expose also a new Service to check the battery state of your thermostats.
+A platform that exposes all Tado Smart Thermostats to HomeKit via [Homebridge](https://github.com/nfarina/homebridge) with additional modes like Heat, Cool, Off, Automatic mode and integrated battery information.
 
 ## Why do we need this plugin?
 
@@ -20,7 +20,7 @@ With the states "Heat" and "Cool" you can heat up or cool down to a certain temp
 
 With the "Automatic" state you remove the "manual" control of the thermostat and setting it back to the automatic mode
 
-This plugin expose a new Service to controll the battery state of each of your thermostats as well (You need the EVE app to check the states because Apple Home dont support this)
+The thermostats will also show the current battery state.
 
 See [Images](https://github.com/SeydX/homebridge-tado-thermostat/tree/master/images/) for more details.
 
