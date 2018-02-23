@@ -131,23 +131,18 @@ class THERMOSTAT {
     getBatteryLevel(callback) {
         var self = this;
 
-        self.get.HOME_ZONES()
+        self.get.HOME_DEVICES()
             .then(response => {
-
-                var zones = response;
-
-                for (var i = 0; i < zones.length; i++) {
-
-                    if (zones[i].name.match(self.zoneName)) {
-                        var batteryStatus = zones[i].devices[0].batteryState;
-
-                        if (batteryStatus == "NORMAL") {
-                            callback(null, 100)
-                        } else {
-                            callback(null, 10)
-                        }
-                    }
-                }
+	            
+	            var batteryStatus = response[0].batteryState;
+	            
+	            if (batteryStatus == "NORMAL") {
+		            self.log(self.name + ": Battery Status: " + batteryStatus)
+	                callback(null, 100)
+	            } else {
+		            self.log(self.name + ": Battery Status: " + batteryStatus)
+	                callback(null, 10)
+	            }
 
             })
             .catch(err => {
@@ -164,23 +159,16 @@ class THERMOSTAT {
     getStatusLowBattery(callback) {
         var self = this;
 
-        self.get.HOME_ZONES()
+        self.get.HOME_DEVICES()
             .then(response => {
-
-                var zones = response;
-
-                for (var i = 0; i < zones.length; i++) {
-
-                    if (zones[i].name.match(self.zoneName)) {
-                        var batteryStatus = zones[i].devices[0].batteryState;
-
-                        if (batteryStatus == "NORMAL") {
-                            callback(null, 0)
-                        } else {
-                            callback(null, 1)
-                        }
-                    }
-                }
+	            
+	            var batteryStatus = response[0].batteryState;
+	            
+	            if (batteryStatus == "NORMAL") {
+	                callback(null, 0)
+	            } else {
+	                callback(null, 1)
+	            }
 
             })
             .catch(err => {
