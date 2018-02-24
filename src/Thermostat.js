@@ -19,7 +19,6 @@ class THERMOSTAT {
         this.api = api;
         this.log = log;
         this.config = config;
-        this.zoneName = config.name;
         this.zoneID = config.id;
         this.name = config.name;
         this.homeID = config.homeID;
@@ -44,11 +43,14 @@ class THERMOSTAT {
         var accessory = this;
 
         this.informationService = new Service.AccessoryInformation()
+            .setCharacteristic(Characteristic.Name, this.name + " Thermo")
+            .setCharacteristic(Characteristic.Identify, this.name + " Thermo")
             .setCharacteristic(Characteristic.Manufacturer, 'Tado GmbH')
-            .setCharacteristic(Characteristic.Model, 'Tado Thermostat Control')
-            .setCharacteristic(Characteristic.SerialNumber, this.name + "-" + this.zoneID);
+            .setCharacteristic(Characteristic.Model, 'Thermostat')
+            .setCharacteristic(Characteristic.SerialNumber, "T-" + this.homeID + "-" + this.zoneID)
+            .setCharacteristic(Characteristic.FirmwareRevision, require('../package.json').version);
 
-        this.Thermostat = new Service.Thermostat(this.zoneName + " Thermostat");
+        this.Thermostat = new Service.Thermostat(this.name + " Thermo");
         this.BatteryService = new Service.BatteryService();
 
         this.BatteryService.getCharacteristic(Characteristic.ChargingState)
@@ -101,22 +103,24 @@ class THERMOSTAT {
             path: this.api.user.cachedAccessoryPath()
         });
 
+
         (function poll() {
             setTimeout(function() {
                     accessory.getHistory()
                     poll()
-                }, 10*1000) //10s
+                }, 10 * 1000) //10s
         })();
+
 
         if (this.polling) {
             (function poll() {
                 setTimeout(function() {
-                    accessory.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).getValue();
-                    accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).getValue();
-                    accessory.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).getValue();
-                    accessory.Thermostat.getCharacteristic(Characteristic.TargetTemperature).getValue();
-                    poll()
-                }, accessory.interval) //Default: 3s
+                        accessory.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).getValue();
+                        accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).getValue();
+                        accessory.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).getValue();
+                        accessory.Thermostat.getCharacteristic(Characteristic.TargetTemperature).getValue();
+                        poll()
+                    }, accessory.interval) //Default: 3s
             })();
         }
 
@@ -163,9 +167,9 @@ class THERMOSTAT {
             .catch(err => {
 
                 if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                    self.log(self.zoneName + " Battery: No connection...");
+                    self.log(self.name + " Battery: No connection...");
                 } else {
-                    self.log(self.zoneName + " Battery: Error: " + err);
+                    self.log(self.name + " Battery: Error: " + err);
                 }
 
             });
@@ -189,9 +193,9 @@ class THERMOSTAT {
             .catch(err => {
 
                 if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                    self.log(self.zoneName + " Battery: No connection...");
+                    self.log(self.name + " Battery: No connection...");
                 } else {
-                    self.log(self.zoneName + " Battery: Error: " + err);
+                    self.log(self.name + " Battery: Error: " + err);
                 }
 
             });
@@ -205,6 +209,7 @@ class THERMOSTAT {
             .then(response => {
 
                 var state = response;
+
                 callback(null, state)
 
             })
@@ -288,6 +293,7 @@ class THERMOSTAT {
 
     }
 
+
     getHistory() {
 
         var accessory = this;
@@ -299,11 +305,14 @@ class THERMOSTAT {
                 accessory.historyService.addEntry({
                     time: moment().unix(),
                     temp: data.sensorDataPoints.insideTemperature.celsius,
+                    pressure: 1029,
                     humidity: data.sensorDataPoints.humidity.percentage
                 });
+
             }
         })
     }
+
 
     getCurrentTemperature(callback) {
 
