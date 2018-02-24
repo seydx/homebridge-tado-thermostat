@@ -71,8 +71,10 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 
 ## Known issues | TODO
 
-- TODO: FakeGato
-
+- [x] Rewrite
+- [x] Better Error handling
+- [x] Fakegato
+- [ ] Dynamic Platform
 
 
 ## Contributing
