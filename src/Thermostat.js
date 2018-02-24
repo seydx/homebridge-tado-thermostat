@@ -1,11 +1,14 @@
+const moment = require('moment');
 var rp = require("request-promise");
 var HK_REQS = require('./Requests.js');
 
-var Accessory, Service, Characteristic;
+var Accessory, Service, Characteristic, FakeGatoHistoryService;
 
 class THERMOSTAT {
 
     constructor(log, config, api) {
+
+        FakeGatoHistoryService = require('fakegato-history')(api);
 
         Accessory = api.platformAccessory;
         Service = api.hap.Service;
@@ -43,13 +46,13 @@ class THERMOSTAT {
         this.informationService = new Service.AccessoryInformation()
             .setCharacteristic(Characteristic.Manufacturer, 'Tado GmbH')
             .setCharacteristic(Characteristic.Model, 'Tado Thermostat Control')
-            .setCharacteristic(Characteristic.SerialNumber, 'Tado Serial Number');
+            .setCharacteristic(Characteristic.SerialNumber, this.name + "-" + this.zoneID);
 
         this.Thermostat = new Service.Thermostat(this.zoneName + " Thermostat");
         this.BatteryService = new Service.BatteryService();
 
         this.BatteryService.getCharacteristic(Characteristic.ChargingState)
-            .updateValue(2);
+            .updateValue(2); //NO CHARGABLE
 
         this.BatteryService.getCharacteristic(Characteristic.BatteryLevel)
             .on('get', this.getBatteryLevel.bind(this));
@@ -92,6 +95,19 @@ class THERMOSTAT {
             })
             .on('get', this.getCurrentRelativeHumidity.bind(this));
 
+        //FAKEGATO
+        this.historyService = new FakeGatoHistoryService("weather", this, {
+            storage: 'fs',
+            path: this.api.user.cachedAccessoryPath()
+        });
+
+        (function poll() {
+            setTimeout(function() {
+                    accessory.getHistory()
+                    poll()
+                }, 10*1000) //10s
+        })();
+
         if (this.polling) {
             (function poll() {
                 setTimeout(function() {
@@ -99,9 +115,8 @@ class THERMOSTAT {
                     accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).getValue();
                     accessory.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).getValue();
                     accessory.Thermostat.getCharacteristic(Characteristic.TargetTemperature).getValue();
-                    accessory.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).getValue();
                     poll()
-                }, accessory.interval)
+                }, accessory.interval) //Default: 3s
             })();
         }
 
@@ -124,7 +139,7 @@ class THERMOSTAT {
             })();
         }
 
-        return [this.informationService, this.Thermostat, this.BatteryService];
+        return [this.informationService, this.Thermostat, this.BatteryService, this.historyService];
 
     }
 
@@ -133,16 +148,16 @@ class THERMOSTAT {
 
         self.get.HOME_DEVICES()
             .then(response => {
-	            
-	            var batteryStatus = response[0].batteryState;
-	            
-	            if (batteryStatus == "NORMAL") {
-		            self.log(self.name + ": Battery Status: " + batteryStatus)
-	                callback(null, 100)
-	            } else {
-		            self.log(self.name + ": Battery Status: " + batteryStatus)
-	                callback(null, 10)
-	            }
+
+                var batteryStatus = response[0].batteryState;
+
+                if (batteryStatus == "NORMAL") {
+                    self.log(self.name + ": Battery Status: " + batteryStatus)
+                    callback(null, 100)
+                } else {
+                    self.log(self.name + ": Battery Status: " + batteryStatus)
+                    callback(null, 10)
+                }
 
             })
             .catch(err => {
@@ -161,14 +176,14 @@ class THERMOSTAT {
 
         self.get.HOME_DEVICES()
             .then(response => {
-	            
-	            var batteryStatus = response[0].batteryState;
-	            
-	            if (batteryStatus == "NORMAL") {
-	                callback(null, 0)
-	            } else {
-	                callback(null, 1)
-	            }
+
+                var batteryStatus = response[0].batteryState;
+
+                if (batteryStatus == "NORMAL") {
+                    callback(null, 0)
+                } else {
+                    callback(null, 1)
+                }
 
             })
             .catch(err => {
@@ -271,6 +286,23 @@ class THERMOSTAT {
             }
         })
 
+    }
+
+    getHistory() {
+
+        var accessory = this;
+
+        accessory.getCurrentState(function(err, data) {
+
+            if (err) accessory.log(err)
+            else {
+                accessory.historyService.addEntry({
+                    time: moment().unix(),
+                    temp: data.sensorDataPoints.insideTemperature.celsius,
+                    humidity: data.sensorDataPoints.humidity.percentage
+                });
+            }
+        })
     }
 
     getCurrentTemperature(callback) {
@@ -463,10 +495,10 @@ class THERMOSTAT {
             var tarstate = accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).value;
 
             if (tarstate == 0) {
-                accessory.log("No setting new temp cause thermostat is off");
+                accessory.log("No setting new temperature, because thermostat is off");
                 callback()
             } else if (tarstate == 3) {
-                accessory.log("No setting new temp cause thermostat is in auto mode");
+                accessory.log("No setting new temperature, because thermostat is in auto mode");
                 callback()
             } else {
                 accessory.get.STATE_NEWTEMP()
@@ -482,7 +514,7 @@ class THERMOSTAT {
                             accessory.log("Thermostat: No connection - Trying to reconnect...");
                             callback()
                         } else {
-                            accessory.log("Could not set Thermostat to NEWTEMP mode: " + err);
+                            accessory.log("Could not change temperature: " + err);
                             callback()
                         }
 
