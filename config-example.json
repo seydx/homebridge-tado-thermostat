@@ -15,7 +15,6 @@
     "coolValue": 3,
     "polling": true,
     "interval": 3,
-    "delay":true,
     "delaytimer": 120
     }
  ]
