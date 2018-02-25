@@ -32,6 +32,8 @@ class THERMOSTAT {
         this.targetMinValue = config.targetMinValue;
         this.targetMaxValue = config.targetMaxValue;
         this.serialNo = config.serialNo;
+        this.delay = config.delay;
+        this.delaytimer = config.delaytimer;
 
         this.get = new HK_REQS(platform.username, platform.password, platform.homeID, {
             "token": process.argv[2]
@@ -460,9 +462,11 @@ class THERMOSTAT {
                             }
 
                         });
+
                     break;
 
                 case Characteristic.TargetHeatingCoolingState.COOL:
+
                     self.get.STATE_COOL()
                         .then(response => {
 
@@ -481,28 +485,71 @@ class THERMOSTAT {
                             }
 
                         });
+
                     break;
 
                 case Characteristic.TargetHeatingCoolingState.AUTO:
-                    self.get.STATE_AUTO()
-                        .then(response => {
 
-                            self.log(self.name + ": Switch to automatic mode");
-                            self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
-                            callback()
 
-                        })
-                        .catch(err => {
+                    if (self.delay) {
 
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log(self.name + ": No connection - Trying to reconnect...");
-                                callback()
-                            } else {
-                                self.log(self.name + ": Error: " + err);
-                                callback()
-                            }
+                        self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
+                        self.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).updateValue(3);
+                        self.log(self.name + ": Switching to automatic mode in " + self.delaytimer / 1000 + " seconds...");
+
+                        function sleep(time) {
+                            return new Promise((resolve) => setTimeout(resolve, time));
+                        }
+
+                        sleep(self.delaytimer).then(() => {
+
+                            self.get.STATE_AUTO()
+                                .then(response => {
+
+                                    self.log(self.name + ": Automatic mode on");
+                                    self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
+                                    callback()
+
+                                })
+                                .catch(err => {
+
+                                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                                        self.log(self.name + ": No connection - Trying to reconnect...");
+                                        callback()
+                                    } else {
+                                        self.log(self.name + ": Error: " + err);
+                                        callback()
+                                    }
+
+                                });
 
                         });
+
+                    } else {
+
+                        self.log(self.name + ": Switching to automatic mode now");
+
+                        self.get.STATE_AUTO()
+                            .then(response => {
+
+                                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
+                                callback()
+
+                            })
+                            .catch(err => {
+
+                                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                                    self.log(self.name + ": No connection - Trying to reconnect...");
+                                    callback()
+                                } else {
+                                    self.log(self.name + ": Error: " + err);
+                                    callback()
+                                }
+
+                            });
+
+                    }
+
                     break;
             }
 
