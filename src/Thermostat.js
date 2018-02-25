@@ -156,7 +156,7 @@ class THERMOSTAT {
 
                 var result = response;
 
-                for (i = 0; i < result.length; i++) {
+                for (var i = 0; i < result.length; i++) {
 
                     if (result[i].serialNo.match(self.serialNo)) {
 
@@ -192,7 +192,7 @@ class THERMOSTAT {
 
                 var result = response;
 
-                for (i = 0; i < result.length; i++) {
+                for (var i = 0; i < result.length; i++) {
 
                     if (result[i].serialNo.match(self.serialNo)) {
 
