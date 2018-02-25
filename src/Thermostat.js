@@ -31,6 +31,7 @@ class THERMOSTAT {
         this.tempUnit = config.tempUnit;
         this.targetMinValue = config.targetMinValue;
         this.targetMaxValue = config.targetMaxValue;
+        this.serialNo = config.serialNo;
 
         this.get = new HK_REQS(platform.username, platform.password, platform.homeID, {
             "token": process.argv[2]
@@ -47,7 +48,7 @@ class THERMOSTAT {
             .setCharacteristic(Characteristic.Identify, this.name + " Thermo")
             .setCharacteristic(Characteristic.Manufacturer, 'Tado GmbH')
             .setCharacteristic(Characteristic.Model, 'Thermostat')
-            .setCharacteristic(Characteristic.SerialNumber, "T-" + this.homeID + "-" + this.zoneID)
+            .setCharacteristic(Characteristic.SerialNumber, "T-" + this.serialNo)
             .setCharacteristic(Characteristic.FirmwareRevision, require('../package.json').version);
 
         this.Thermostat = new Service.Thermostat(this.name + " Thermo");
@@ -139,7 +140,7 @@ class THERMOSTAT {
                         accessory.BatteryService.getCharacteristic(Characteristic.BatteryLevel).getValue();
                         accessory.BatteryService.getCharacteristic(Characteristic.StatusLowBattery).getValue();
                         poll()
-                    }, 1000 * 60 * 60 * 24) //24h
+                    }, accessory.interval) //Default: 3s
             })();
         }
 
@@ -153,14 +154,22 @@ class THERMOSTAT {
         self.get.HOME_DEVICES()
             .then(response => {
 
-                var batteryStatus = response[0].batteryState;
+                var result = response;
 
-                if (batteryStatus == "NORMAL") {
-                    self.log(self.name + ": Battery Status: " + batteryStatus)
-                    callback(null, 100)
-                } else {
-                    self.log(self.name + ": Battery Status: " + batteryStatus)
-                    callback(null, 10)
+                for (i = 0; i < result.length; i++) {
+
+                    if (result[i].serialNo.match(self.serialNo)) {
+
+                        var batteryStatus = result[i].batteryState;
+
+                        if (batteryStatus == "NORMAL") {
+                            callback(null, 100)
+                        } else {
+                            callback(null, 10)
+                        }
+
+                    }
+
                 }
 
             })
@@ -181,12 +190,22 @@ class THERMOSTAT {
         self.get.HOME_DEVICES()
             .then(response => {
 
-                var batteryStatus = response[0].batteryState;
+                var result = response;
 
-                if (batteryStatus == "NORMAL") {
-                    callback(null, 0)
-                } else {
-                    callback(null, 1)
+                for (i = 0; i < result.length; i++) {
+
+                    if (result[i].serialNo.match(self.serialNo)) {
+
+                        var batteryStatus = result[i].batteryState;
+
+                        if (batteryStatus == "NORMAL") {
+                            callback(null, 0)
+                        } else {
+                            callback(null, 1)
+                        }
+
+                    }
+
                 }
 
             })
