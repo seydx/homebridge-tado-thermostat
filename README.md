@@ -49,7 +49,6 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "coolValue": 3,
     "polling": true,
     "interval": 3,
-    "delay":true,
     "delaytimer": 120
     }
   ]
@@ -69,8 +68,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to (Current Room Temperature) - 4 degrees (Default: 4) |
 | polling | No | Checking states of the thermostats (Default: true)  |
 | interval | No | Interval for polling in seconds (Default: 3s) |
-| delay | No | Delay for setting thermostat in auto mode (Default: true) |
-| delaytimer | No | Timer for delay in seconds (Default 2min) |
+| delaytimer | No | OPTIONAL: Delay for setting the thermostat back in automatic mode (in seconds) |
 
 
 ## Known issues | TODO
