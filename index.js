@@ -148,12 +148,12 @@ TadoThermostatPlatform.prototype = {
 
                                     if (devices.length > 1) {
 
-                                        for (j = 0; j < devices.length; j++) {
+                                        for (var j = 0; j < devices.length; j++) {
 
                                             if (deviceTypes[i] == "VA01" || deviceTypes[i] == "RU01") {
 
                                                 toConfig = {
-                                                    name: zones[i].name + " " + deviceTypes[i] + " " + j,
+                                                    name: zones[i].name + " " + deviceTypes[j] + " " + j,
                                                     id: zones[i].id,
                                                     homeID: self.homeID,
                                                     username: self.username,
@@ -168,7 +168,7 @@ TadoThermostatPlatform.prototype = {
                                                     serialNo: zones[i].devices[j].serialNo
                                                 }
 
-                                                self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + " | " + deviceTypes[i] + ")")
+                                                self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + " | " + deviceTypes[j] + ")")
                                                 zonesArray.push(toConfig);
 
                                             }
