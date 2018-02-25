@@ -32,7 +32,6 @@ class THERMOSTAT {
         this.targetMinValue = config.targetMinValue;
         this.targetMaxValue = config.targetMaxValue;
         this.serialNo = config.serialNo;
-        this.delay = config.delay;
         this.delaytimer = config.delaytimer;
 
         this.get = new HK_REQS(platform.username, platform.password, platform.homeID, {
@@ -491,10 +490,8 @@ class THERMOSTAT {
                 case Characteristic.TargetHeatingCoolingState.AUTO:
 
 
-                    if (self.delay) {
-
-                        self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
-                        self.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).updateValue(3);
+                    if (self.delaytimer > 0) {
+	                    
                         self.log(self.name + ": Switching to automatic mode in " + self.delaytimer / 1000 + " seconds...");
 
                         function sleep(time) {
