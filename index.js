@@ -143,22 +143,47 @@ TadoThermostatPlatform.prototype = {
                             for (var i = 0; i < zones.length; i++) {
                                 if (zones[i].type.match("HEATING")) {
 
-                                    var toConfig = {
-                                        id: zones[i].id,
-                                        name: zones[i].name,
-                                        homeID: self.homeID,
-                                        username: self.username,
-                                        password: self.password,
-                                        polling: self.polling,
-                                        interval: self.interval,
-                                        coolValue: self.coolValue,
-                                        heatValue: self.heatValue,
-                                        tempUnit: self.tempUnit,
-                                        targetMinValue: self.targetMinValue,
-                                        targetMaxValue: self.targetMaxValue
+                                    var devices = zones[i].devices;
+
+                                    if (devices.length > 1) {
+                                        for (j = 0; j < devices.length; j++) {
+                                            toConfig = {
+                                                name: zones[i].name + " " + j,
+                                                id: zones[i].id,
+                                                homeID: self.homeID,
+                                                username: self.username,
+                                                password: self.password,
+                                                polling: self.polling,
+                                                interval: self.interval,
+                                                coolValue: self.coolValue,
+                                                heatValue: self.heatValue,
+                                                tempUnit: self.tempUnit,
+                                                targetMinValue: self.targetMinValue,
+                                                targetMaxValue: self.targetMaxValue,
+                                                serialNo: zones[i].devices[j].serialNo
+                                            }
+                                            self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + ") ...")
+                                            zonesArray.push(toConfig);
+                                        }
+                                    } else {
+                                        toConfig = {
+                                            name: zones[i].name,
+                                            id: zones[i].id,
+                                            homeID: self.homeID,
+                                            username: self.username,
+                                            password: self.password,
+                                            polling: self.polling,
+                                            interval: self.interval,
+                                            coolValue: self.coolValue,
+                                            heatValue: self.heatValue,
+                                            tempUnit: self.tempUnit,
+                                            targetMinValue: self.targetMinValue,
+                                            targetMaxValue: self.targetMaxValue,
+                                            serialNo: zones[i].devices[0].serialNo
+                                        }
+                                        self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + ") ...")
+                                        zonesArray.push(toConfig);
                                     }
-                                    self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + ") ...")
-                                    zonesArray.push(toConfig);
 
                                 }
                             }
