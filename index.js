@@ -29,6 +29,8 @@ function TadoThermostatPlatform(log, config, api) {
     this.interval = (config["interval"] * 1000) || 3000;
     this.coolValue = config["coolValue"] || 4;
     this.heatValue = config["heatValue"] || 4;
+    this.delay = config["delay"] === true;
+    this.delaytimer = (config["delaytimer"] * 1000) || 1000*60*2; //Default 2min
 }
 
 TadoThermostatPlatform.prototype = {
@@ -161,7 +163,9 @@ TadoThermostatPlatform.prototype = {
                                                 tempUnit: self.tempUnit,
                                                 targetMinValue: self.targetMinValue,
                                                 targetMaxValue: self.targetMaxValue,
-                                                serialNo: zones[i].devices[j].serialNo
+                                                serialNo: zones[i].devices[j].serialNo,
+                                                delay: self.delay,
+                                                delaytimer: self.delaytimer
                                             }
 
                                             self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + " | " + devices[j].deviceType + ")")
