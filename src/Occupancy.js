@@ -47,8 +47,13 @@ class USER {
 
         this.Motion = new Service.MotionSensor(this.name);
 
-        this.Motion.getCharacteristic(Characteristic.MotionDetected)
-            .on('get', this.getMotionDetected.bind(this));
+        if (accessory.name == "Anyone") {
+            this.Motion.getCharacteristic(Characteristic.MotionDetected)
+                .on('get', this.getAnyoneDetected.bind(this));
+        } else {
+            this.Motion.getCharacteristic(Characteristic.MotionDetected)
+                .on('get', this.getMotionDetected.bind(this));
+        }
 
         this.Motion.getCharacteristic(Characteristic.StatusActive)
             .updateValue(true);
@@ -63,9 +68,9 @@ class USER {
         if (this.polling) {
             (function poll() {
                 setTimeout(function() {
-                        accessory.Motion.getCharacteristic(Characteristic.MotionDetected).getValue();
-                        poll()
-                    }, accessory.interval)
+                    accessory.Motion.getCharacteristic(Characteristic.MotionDetected).getValue();
+                    poll()
+                }, accessory.interval)
             })();
         }
 
@@ -119,6 +124,41 @@ class USER {
 
     }
 
+    getAnyoneDetected(callback) {
+
+        var self = this;
+
+        self.get.HOME_MOBILEDEVICES()
+            .then(response => {
+
+                var result = response;
+                var occupied = 0;
+
+                for (var i = 0; i < result.length; i++) {
+
+                    if (result[i].location.atHome) {
+
+                        occupied = 1;
+
+                    }
+
+                }
+
+                callback(null, occupied)
+
+            })
+            .catch(err => {
+
+                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                    self.log(self.name + ": No connection...");
+                } else {
+                    self.log(self.name + ": Error: " + err);
+                }
+
+            });
+
+    }
+    
 }
 
 module.exports = USER
