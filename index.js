@@ -269,6 +269,21 @@ TadoThermostatPlatform.prototype = {
                                 }
                             }
 
+                            if (occupancyArray.length > 0) {
+                                toConfig = {
+                                    name: "Anyone",
+                                    id: 999999,
+                                    homeID: self.homeID,
+                                    username: self.username,
+                                    password: self.password,
+                                    polling: self.occupancyPolling,
+                                    interval: self.occupancyInterval
+                                }
+
+                                self.log("Adding ANYONE sensor");
+                                occupancyArray.push(toConfig);
+                            }
+
                             next(null, occupancyArray)
 
                         })
