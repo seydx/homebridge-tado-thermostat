@@ -1,10 +1,10 @@
 # Homebridge Plugin for Tado Smart Thermostats
 
-A platform that exposes all Tado Smart Thermostats to HomeKit via [Homebridge](https://github.com/nfarina/homebridge) with additional modes like Heat, Cool, Off, Automatic mode and integrated battery information.
+A platform that expose all Tado Smart Thermostats to HomeKit via [Homebridge](https://github.com/nfarina/homebridge) with additional modes like Heat, Cool, Off, Automatic mode and integrated battery information. Also able to expose weather temperature sensor or occupancy sensors with FakeGato ability.
 
 ## Why do we need this plugin?
 
-Because, native Tado exposes a thermostat with the possiblity to adjust ONLY the temperature value for heating and the power mode (On/Off).
+Because, native Tado expose only thermostats with the possiblity to adjust the temperature value for heating and the power mode (On/Off).
 
 With this plugin, you can set several modes, like:
 
@@ -21,6 +21,8 @@ With the states "Heat" and "Cool" you can heat up or cool down to a certain temp
 With the "Automatic" state you remove the "manual" control of the thermostat and setting it back to the automatic mode
 
 The thermostats will also show the current battery state.
+
+It can also expose weather temperature sensor, weather service to detect if weather is i.e. clear or cloudy etc. (tested with EVE app) and occupancy sensors.
 
 See [Images](https://github.com/SeydX/homebridge-tado-thermostat/tree/master/images/) for more details.
 
@@ -45,11 +47,34 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "name":"Thermostat",
     "username":"TadoUserName",
     "password":"TadoPassword",
+    }
+  ]
+}
+```
+
+ ## Advanced config.json:
+
+ ```
+{
+  "bridge": {
+      ...
+  },
+  "platforms": [
+    {
+    "platform": "TadoThermostat",
+    "name": "Thermostat",
+    "username": "TadoUsername",
+    "password": "TadoPassword",
     "heatValue": 5,
-    "coolValue": 3,
-    "polling": true,
-    "interval": 3,
-    "delaytimer": 120
+    "coolValue": 5,
+    "delayTimer": 0,
+    "weatherEnabled": true,
+    "weatherServiceEnabled": true,
+    "weatherPolling": true,
+    "weatherInterval": 10,
+    "occupancyEnabled": true,
+    "occupancyPolling": true,
+    "occupancyInterval": 5
     }
   ]
 }
@@ -64,11 +89,16 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | name | no | Name for the Thermostat. Will be used as part of the accessory name.  |
 | username | Yes | Tado Login Username |
 | password | Yes | Tado Login Password |
-| heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to (Current Room Temperature) + 4 degrees (Default: 4) |
-| coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to (Current Room Temperature) - 4 degrees (Default: 4) |
-| polling | No | Checking states of the thermostats (Default: true)  |
-| interval | No | Interval for polling in seconds (Default: 3s) |
-| delaytimer | No | OPTIONAL: Delay for setting the thermostat back in automatic mode (in seconds) |
+| heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to **Current Room Temperature + 4 degrees** (Default: 4) |
+| coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to **Current Room Temperature - 4 degrees** (Default: 4) |
+| delaytimer | No | Delay for setting the thermostat back in automatic mode (Default: 0 == not enabled) |
+| weatherEnabled | No | Enable Outside Temperature sensor (Default: false) |
+| weatherServiceEnabled | No | Enable Service to check for weather state, eg. cloudy, sunny, clear etc. NOT compatible with the Apple Home app! (Default: false) |
+| weatherPolling | No | Enable polling to check for changes in Weather. (Default: true) |
+| weatherInterval | No | Time in **Minutes** to check for changes in Weather. (Default: 10min) |
+| occupancyEnabled | No | Enable Occupancy sensor for registred Tado users (Default: false) |
+| occupancyPolling | No | Enable polling to check for changes in occupancy. (Default: true) |
+| occupancyInterval | No | Time in **Seconds** to check for changes in occupancy. (Default: 5sec) |
 
 
 ## Known issues | TODO
@@ -76,6 +106,9 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Rewrite
 - [x] Better Error handling
 - [x] Fakegato
+- [x] Weather Sensor
+- [x] Occupancy Sensor
+- [x] Weather State Service
 - [ ] Dynamic Platform
 
 
