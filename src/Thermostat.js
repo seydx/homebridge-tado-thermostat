@@ -24,8 +24,6 @@ class THERMOSTAT {
         this.homeID = config.homeID;
         this.username = config.username;
         this.password = config.password;
-        this.polling = config.polling;
-        this.interval = config.interval;
         this.coolValue = config.coolValue;
         this.heatValue = config.heatValue;
         this.tempUnit = config.tempUnit;
@@ -102,48 +100,42 @@ class THERMOSTAT {
         //FAKEGATO
         this.historyService = new FakeGatoHistoryService("weather", this, {
             storage: 'fs',
+            disableTimer: false,
             path: this.api.user.cachedAccessoryPath()
         });
 
 
         (function poll() {
             setTimeout(function() {
-                    accessory.getHistory()
-                    poll()
-                }, 10 * 1000) //10s
+                accessory.getHistory()
+                poll()
+            }, 5 * 60 * 1000)
         })();
 
+        (function poll() {
+            setTimeout(function() {
+                accessory.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).getValue();
+                accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).getValue();
+                accessory.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).getValue();
+                accessory.Thermostat.getCharacteristic(Characteristic.TargetTemperature).getValue();
+                poll()
+            }, 5000)
+        })();
 
-        if (this.polling) {
-            (function poll() {
-                setTimeout(function() {
-                        accessory.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).getValue();
-                        accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).getValue();
-                        accessory.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).getValue();
-                        accessory.Thermostat.getCharacteristic(Characteristic.TargetTemperature).getValue();
-                        poll()
-                    }, accessory.interval) //Default: 3s
-            })();
-        }
+        (function poll() {
+            setTimeout(function() {
+                accessory.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).getValue();
+                poll()
+            }, 60 * 60 * 1000)
+        })();
 
-        if (this.polling) {
-            (function poll() {
-                setTimeout(function() {
-                        accessory.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).getValue();
-                        poll()
-                    }, 1000 * 60 * 60) //1h
-            })();
-        }
-
-        if (this.polling) {
-            (function poll() {
-                setTimeout(function() {
-                        accessory.BatteryService.getCharacteristic(Characteristic.BatteryLevel).getValue();
-                        accessory.BatteryService.getCharacteristic(Characteristic.StatusLowBattery).getValue();
-                        poll()
-                    }, accessory.interval) //Default: 3s
-            })();
-        }
+        (function poll() {
+            setTimeout(function() {
+                accessory.BatteryService.getCharacteristic(Characteristic.BatteryLevel).getValue();
+                accessory.BatteryService.getCharacteristic(Characteristic.StatusLowBattery).getValue();
+                poll()
+            }, 5000)
+        })();
 
         return [this.informationService, this.Thermostat, this.BatteryService, this.historyService];
 
@@ -179,7 +171,7 @@ class THERMOSTAT {
                 if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
                     self.log(self.name + " Battery: No connection...");
                 } else {
-                    self.log(self.name + " Battery: Error: " + err);
+                    self.log(self.name + ": Error: " + err);
                 }
 
             });
@@ -215,7 +207,7 @@ class THERMOSTAT {
                 if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
                     self.log(self.name + " Battery: No connection...");
                 } else {
-                    self.log(self.name + " Battery: Error: " + err);
+                    self.log(self.name + ": Error: " + err);
                 }
 
             });
@@ -236,10 +228,10 @@ class THERMOSTAT {
             .catch(err => {
 
                 if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                    self.log("State: No connection - Trying to reconnect...");
+                    self.log("State: No connection...");
                     callback(null, false)
                 } else {
-                    self.log("Could not retrieve status from " + self.name + ": " + err);
+                    self.log(self.name + ": Error: " + err);
                     callback(null, false)
                 }
 
@@ -491,7 +483,7 @@ class THERMOSTAT {
 
 
                     if (self.delaytimer > 0) {
-	                    
+
                         self.log(self.name + ": Switching to automatic mode in " + self.delaytimer / 1000 + " seconds...");
 
                         function sleep(time) {
@@ -567,10 +559,10 @@ class THERMOSTAT {
             var tarstate = accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).value;
 
             if (tarstate == 0) {
-                accessory.log("No setting new temperature, because thermostat is off");
+                accessory.log("Can't set new Temperature, Thermostat is off");
                 callback()
             } else if (tarstate == 3) {
-                accessory.log("No setting new temperature, because thermostat is in auto mode");
+                accessory.log("Can't set new Temperature, Thermostat is in auto mode");
                 callback()
             } else {
                 accessory.get.STATE_NEWTEMP()
@@ -583,10 +575,10 @@ class THERMOSTAT {
                     .catch(err => {
 
                         if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                            accessory.log("Thermostat: No connection - Trying to reconnect...");
+                            accessory.log("Thermostat: No connection...");
                             callback()
                         } else {
-                            accessory.log("Could not change temperature: " + err);
+                            accessory.log(self.name + ": Error: " + err);
                             callback()
                         }
 
