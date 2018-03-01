@@ -3,6 +3,9 @@ var rp = require("request-promise"),
 
 var HK_REQS = require('./src/Requests.js');
 var Tado_Thermostat = require('./src/Thermostat.js');
+var Tado_Weather = require('./src/Weather.js');
+var Tado_WeatherService = require('./src/WeatherService.js');
+var Tado_Occupancy = require('./src/Occupancy.js');
 
 var Accessory, Service, Characteristic;
 
@@ -17,19 +20,32 @@ module.exports = function(homebridge) {
 }
 
 function TadoThermostatPlatform(log, config, api) {
-    var platform = this;
 
+    //Homebridge
     this.api = api;
     this.log = log;
     this.config = config;
+
+    //Base Config
     this.name = config["name"] || "Tado";
     this.username = config["username"];
     this.password = config["password"];
-    this.polling = config["polling"] === true;
-    this.interval = (config["interval"] * 1000) || 3000;
+
+    //Thermostat Config
     this.coolValue = config["coolValue"] || 4;
     this.heatValue = config["heatValue"] || 4;
     this.delaytimer = (config["delaytimer"] * 1000);
+
+    //Weather Config
+    this.weatherEnabled = config["weatherEnabled"] || false;
+    this.weatherServiceEnabled = config["weatherServiceEnabled"] || false;
+    this.weatherPolling = config["weatherPolling"] === true;
+    this.weatherInterval = (config["weatherInterval"] * 60 * 1000) || 10 * 60 * 1000;
+
+    //Occupancy Config
+    this.occupancyEnabled = config["occupancyEnabled"] || false;
+    this.occupancyPolling = config["occupancyPolling"] === true;
+    this.occupancyInterval = (config["occupancyInterval"] * 1000) || 5000;
 
 }
 
@@ -111,12 +127,12 @@ TadoThermostatPlatform.prototype = {
                         .catch(err => {
 
                             if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log("TempUnit: No connection - Trying to reconnect...");
+                                self.log("Temperature Unit: No connection - Trying to reconnect...");
                                 setTimeout(function() {
                                     fetchTemperatureUnit(next)
                                 }, 10000)
                             } else {
-                                self.log("Fetching Temp Unit failed - Trying again..." + err);
+                                self.log("Fetching Temperature Unit failed - Trying again..." + err);
                                 setTimeout(function() {
                                     fetchTemperatureUnit(next)
                                 }, 10000)
@@ -156,8 +172,6 @@ TadoThermostatPlatform.prototype = {
                                                 homeID: self.homeID,
                                                 username: self.username,
                                                 password: self.password,
-                                                polling: self.polling,
-                                                interval: self.interval,
                                                 coolValue: self.coolValue,
                                                 heatValue: self.heatValue,
                                                 tempUnit: self.tempUnit,
@@ -219,6 +233,117 @@ TadoThermostatPlatform.prototype = {
                     else next()
                 })
 
+            },
+
+            // set Occupancy
+            function(next) {
+
+                function fetchOccupancy(next) {
+
+                    self.get = new HK_REQS(self.username, self.password, self.homeID, {
+                        "token": process.argv[2]
+                    });
+
+                    self.get.HOME_MOBILEDEVICES()
+                        .then(response => {
+
+                            var occupancies = response;
+                            var occupancyArray = []
+
+                            for (var i = 0; i < occupancies.length; i++) {
+                                if (occupancies[i].settings.geoTrackingEnabled == true) {
+
+                                    toConfig = {
+                                        name: occupancies[i].name,
+                                        id: occupancies[i].id,
+                                        homeID: self.homeID,
+                                        username: self.username,
+                                        password: self.password,
+                                        polling: self.occupancyPolling,
+                                        interval: self.occupancyInterval
+                                    }
+
+                                    self.log("Found new User: " + toConfig.name)
+                                    occupancyArray.push(toConfig);
+
+                                }
+                            }
+
+                            next(null, occupancyArray)
+
+                        })
+                        .catch(err => {
+
+                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                                self.log("Occupancy: No connection - Trying to reconnect...");
+                                setTimeout(function() {
+                                    fetchOccupancy(next)
+                                }, 10000)
+                            } else {
+                                self.log(err);
+                                setTimeout(function() {
+                                    fetchOccupancy(next)
+                                }, 10000)
+                            }
+
+                        });
+                }
+                fetchOccupancy(next)
+            },
+
+            // Create Accessories  
+            function(occupancyArray, next) {
+                if (self.occupancyEnabled) {
+                    async.forEachOf(occupancyArray, function(zone, key, step) {
+
+                        function pushMyAccessories(step) {
+
+                            var tadoAccessory = new Tado_Occupancy(self.log, zone, self.api)
+                            accessoriesArray.push(tadoAccessory);
+                            step()
+
+                        }
+                        pushMyAccessories(step)
+
+                    }, function(err) {
+                        if (err) next(err)
+                        else next()
+                    })
+                } else {
+                    next()
+                }
+            },
+
+            // set Weather
+            function(next) {
+                if (self.weatherEnabled) {
+                    var weatherConfig = {
+                        name: "Weather",
+                        homeID: self.homeID,
+                        username: self.username,
+                        password: self.password,
+                        polling: self.weatherPolling,
+                        interval: self.weatherInterval,
+                        tempUnit: self.tempUnit,
+                    }
+                    var weatherAccessory = new Tado_Weather(self.log, weatherConfig, self.api)
+                    accessoriesArray.push(weatherAccessory);
+                }
+                next();
+            },
+
+            function(next) {
+                if (self.weatherServiceEnabled) {
+                    var weatherServiceConfig = {
+                        name: "Weather Service",
+                        homeID: self.homeID,
+                        username: self.username,
+                        password: self.password
+                    }
+                    var weatherServiceAccessory = new Tado_WeatherService(self.log, weatherServiceConfig, self.api)
+                    accessoriesArray.push(weatherServiceAccessory);
+                }
+                next();
             }
 
         ], function(err, result) {
