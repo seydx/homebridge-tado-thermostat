@@ -1,14 +1,10 @@
 var rp = require("request-promise");
-var HK_REQS = require('./Requests.js');
 var inherits = require("util").inherits;
+var pollingtoevent = require("polling-to-event");
 
 var Accessory,
     Service,
     Characteristic,
-    CustomUUID = {
-        WeatherService: "15473fd1-4e44-4aea-96e2-11af1809d8ad",
-        WeatherCharacteristic: "08ea5ea1-372a-4a6d-bec7-1dfd6107d6f0",
-    },
     WeatherService,
     WeatherCharacteristic;
 
@@ -21,12 +17,12 @@ class WEATHERSERVICE {
         Characteristic = api.hap.Characteristic;
 
         WeatherService = function(displayName, subtype) {
-            Service.call(this, displayName, CustomUUID.WeatherService, subtype);
+            Service.call(this, displayName, "15473fd1-4e44-4aea-96e2-11af1809d8ad", subtype);
         };
         inherits(WeatherService, Service);
 
         WeatherCharacteristic = function() {
-            Characteristic.call(this, "Current Weather", CustomUUID.WeatherCharacteristic);
+            Characteristic.call(this, "Current Weather", "08ea5ea1-372a-4a6d-bec7-1dfd6107d6f0");
             this.setProps({
                 format: Characteristic.Formats.STRING,
                 perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
@@ -45,8 +41,18 @@ class WEATHERSERVICE {
         this.username = config.username;
         this.password = config.password;
 
-        this.get = new HK_REQS(platform.username, platform.password, platform.homeID, {
-            "token": process.argv[2]
+        this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
+            "/weather?password=" + this.password +
+            "&username=" + this.username;
+
+        this.weather = "";
+
+        this.emitter = pollingtoevent(function(done) {
+            rp.get(platform.url, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: true
         });
 
     }
@@ -67,16 +73,9 @@ class WEATHERSERVICE {
 
         this.weatherService.addCharacteristic(WeatherCharacteristic);
         this.weatherService.getCharacteristic(WeatherCharacteristic)
-            .on("get", this.getCurrentWeatherState.bind(this));
+            .updateValue(accessory.weather);
 
-        if (this.polling) {
-            (function poll() {
-                setTimeout(function() {
-                        accessory.weatherService.getCharacteristic(Characteristic.WeatherCharacteristic).getValue();
-                        poll()
-                    }, 30 * 60 * 1000) //30min
-            })();
-        }
+        accessory.getCurrentWeatherState()
 
         return [this.informationService, this.weatherService];
 
@@ -86,24 +85,19 @@ class WEATHERSERVICE {
 
         var self = this;
 
-        self.get.WEATHER()
-            .then(response => {
+        self.emitter
+            .on("longpoll", function(data) {
 
-                var state = response.weatherState.value;
+                var result = JSON.parse(data);
+                self.weather = result.weatherState.value;
 
-                callback(null, state)
+                //self.log("Current Weather state: " + self.weather);
+                self.weatherService.getCharacteristic(WeatherCharacteristic).updateValue(self.weather);
 
             })
-            .catch(err => {
-
-                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                    self.log(self.name + ": No connection...");
-                    callback(null, false)
-                } else {
-                    self.log(self.name + ": Error: " + err);
-                    callback(null, false)
-                }
-
+            .on("error", function(err) {
+                console.log("%s", err);
+                self.weatherService.getCharacteristic(WeatherCharacteristic).updateValue(self.weather);
             });
 
     }
