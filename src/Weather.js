@@ -67,9 +67,6 @@ class WEATHER {
             })
             .updateValue(accessory.state)
 
-        this.Weather.getCharacteristic(Characteristic.TemperatureDisplayUnits)
-            .on('get', this.getTemperatureDisplayUnits.bind(this))
-
         //FAKEGATO
         this.historyService = new FakeGatoHistoryService("weather", this, {
             storage: 'fs',
@@ -118,18 +115,6 @@ class WEATHER {
                 console.log("%s", err);
                 self.Weather.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.temp);
             });
-
-    }
-
-    getTemperatureDisplayUnits(callback) {
-
-        var accessory = this;
-
-        if (accessory.tempUnit == "CELSIUS") {
-            callback(null, Characteristic.TemperatureDisplayUnits.CELSIUS);
-        } else {
-            callback(null, Characteristic.TemperatureDisplayUnits.FAHRENHEIT);
-        }
 
     }
 
