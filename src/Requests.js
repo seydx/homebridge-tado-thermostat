@@ -2,7 +2,7 @@ var rp = require("request-promise");
 
 class TADO_REQ {
 
-    constructor(username, password, homeID, params, zoneID, heatValue, coolValue, currentValue, value) {
+    constructor(username, password, homeID, params, zoneID, heatValue, coolValue, currenttemp, value) {
         this.username = username;
         this.password = password;
         this.homeID = homeID;
@@ -10,9 +10,9 @@ class TADO_REQ {
         this.zoneID = zoneID;
         this.heatValue = heatValue;
         this.coolValue = coolValue;
-        this.currentValue = currentValue;
-        this.newHeat = currentValue + heatValue;
-        this.newCool = currentValue - coolValue;
+        this.currenttemp = currenttemp;
+        this.newHeat = currenttemp + heatValue;
+        this.newCool = currenttemp - coolValue;
         this.newTemp = value;
 
     }
