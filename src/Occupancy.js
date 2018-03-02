@@ -166,7 +166,11 @@ class USER {
 
                     if (result[i].id == self.userID) {
 
-                        var userStatus = result[i].location.atHome;
+                        var userStatus = false;
+
+                        if (result[i].settings.geoTrackingEnabled == true) {
+                            userStatus = result[i].location.atHome;
+                        }
 
                         if (userStatus == true) {
                             //self.log(self.name + " is at home!");
@@ -208,17 +212,19 @@ class USER {
                 var b = 0;
 
                 for (var i = 0; i < result.length; i++) {
-                    result[i].location.atHome == true ? a = 1 : b = 0
+                    if (result[i].settings.geoTrackingEnabled == true) {
+                        result[i].location.atHome == true ? a = 1 : b = 0
+                    }
                 }
 
                 var c = a + b;
 
                 if (c > 0) {
                     self.state = 1
-                    //self.log("Anyone at home");
+                        //self.log("Anyone at home");
                 } else {
                     self.state = 0
-                    //self.log("No one at home");
+                        //self.log("No one at home");
                 }
 
                 self.historyService.addEntry({
