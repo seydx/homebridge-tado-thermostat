@@ -15,12 +15,8 @@
         "coolValue": 5,
         "delayTimer": 0,
         "weatherEnabled":true,
-        "weatherServiceEnabled":true,
-        "weatherPolling": true,
-        "weatherInterval": 10,
-        "occupancyEnabled":true,
-        "occupancyPolling": true,
-        "occupancyInterval": 5
+        "weatherServiceEnabled":true
+        "occupancyEnabled":true
    }
  ]
 }
