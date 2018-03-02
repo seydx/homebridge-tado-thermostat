@@ -39,13 +39,9 @@ function TadoThermostatPlatform(log, config, api) {
     //Weather Config
     this.weatherEnabled = config["weatherEnabled"] || false;
     this.weatherServiceEnabled = config["weatherServiceEnabled"] || false;
-    this.weatherPolling = config["weatherPolling"] === true;
-    this.weatherInterval = (config["weatherInterval"] * 60 * 1000) || 10 * 60 * 1000;
 
     //Occupancy Config
     this.occupancyEnabled = config["occupancyEnabled"] || false;
-    this.occupancyPolling = config["occupancyPolling"] === true;
-    this.occupancyInterval = (config["occupancyInterval"] * 1000) || 5000;
 
 }
 
@@ -90,7 +86,6 @@ TadoThermostatPlatform.prototype = {
                             }
 
                         });
-
 
                 }
                 fetchHomeID(next)
@@ -209,7 +204,6 @@ TadoThermostatPlatform.prototype = {
 
                         });
 
-
                 }
                 fetchZones(next)
             },
@@ -258,9 +252,7 @@ TadoThermostatPlatform.prototype = {
                                         id: occupancies[i].id,
                                         homeID: self.homeID,
                                         username: self.username,
-                                        password: self.password,
-                                        polling: self.occupancyPolling,
-                                        interval: self.occupancyInterval
+                                        password: self.password
                                     }
 
                                     self.log("Found new User: " + toConfig.name)
@@ -275,9 +267,7 @@ TadoThermostatPlatform.prototype = {
                                     id: 999999,
                                     homeID: self.homeID,
                                     username: self.username,
-                                    password: self.password,
-                                    polling: self.occupancyPolling,
-                                    interval: self.occupancyInterval
+                                    password: self.password
                                 }
 
                                 self.log("Adding ANYONE sensor");
@@ -337,8 +327,6 @@ TadoThermostatPlatform.prototype = {
                         homeID: self.homeID,
                         username: self.username,
                         password: self.password,
-                        polling: self.weatherPolling,
-                        interval: self.weatherInterval,
                         tempUnit: self.tempUnit,
                     }
                     var weatherAccessory = new Tado_Weather(self.log, weatherConfig, self.api)
@@ -347,6 +335,7 @@ TadoThermostatPlatform.prototype = {
                 next();
             },
 
+            // set WeatherService
             function(next) {
                 if (self.weatherServiceEnabled) {
                     var weatherServiceConfig = {
