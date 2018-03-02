@@ -70,11 +70,7 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "delayTimer": 0,
     "weatherEnabled": true,
     "weatherServiceEnabled": true,
-    "weatherPolling": true,
-    "weatherInterval": 10,
-    "occupancyEnabled": true,
-    "occupancyPolling": true,
-    "occupancyInterval": 5
+    "occupancyEnabled": true
     }
   ]
 }
@@ -94,11 +90,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | delaytimer | No | Delay for setting the thermostat back in automatic mode (Default: 0 == not enabled) |
 | weatherEnabled | No | Enable Outside Temperature sensor (Default: false) |
 | weatherServiceEnabled | No | Enable Service to check for weather state, eg. cloudy, sunny, clear etc. NOT compatible with the Apple Home app! (Default: false) |
-| weatherPolling | No | Enable polling to check for changes in Weather. (Default: true) |
-| weatherInterval | No | Time in **Minutes** to check for changes in Weather. (Default: 10min) |
 | occupancyEnabled | No | Enable Occupancy sensor for registred Tado users (Default: false) |
-| occupancyPolling | No | Enable polling to check for changes in occupancy. (Default: true) |
-| occupancyInterval | No | Time in **Seconds** to check for changes in occupancy. (Default: 5sec) |
 
 
 ## Known issues | TODO
@@ -109,6 +101,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Weather Sensor
 - [x] Occupancy Sensor
 - [x] Weather State Service
+- [x] long polling
 - [ ] Dynamic Platform
 
 
