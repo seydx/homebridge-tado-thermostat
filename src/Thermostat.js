@@ -1,6 +1,7 @@
 const moment = require('moment');
 var rp = require("request-promise");
 var HK_REQS = require('./Requests.js');
+var pollingtoevent = require("polling-to-event");
 
 var Accessory, Service, Characteristic, FakeGatoHistoryService;
 
@@ -21,6 +22,7 @@ class THERMOSTAT {
         this.config = config;
         this.zoneID = config.id;
         this.name = config.name;
+        this.displayName = config.name;
         this.homeID = config.homeID;
         this.username = config.username;
         this.password = config.password;
@@ -32,9 +34,43 @@ class THERMOSTAT {
         this.serialNo = config.serialNo;
         this.delaytimer = config.delaytimer;
 
+        this.batterLevel = 100;
+        this.batteryStatus = 0;
+        this.humidity = 0;
+        this.currenttemp = 0;
+        this.targettemp = 0;
+        this.currentstate = 0;
+        this.targetstate = 3;
+
         this.get = new HK_REQS(platform.username, platform.password, platform.homeID, {
             "token": process.argv[2]
         }, platform.zoneID, platform.coolValue, platform.heatValue);
+
+        this.url_devices = "https://my.tado.com/api/v2/homes/" + this.homeID +
+            "/zones/" + this.zoneID +
+            "/devices?password=" + this.password +
+            "&username=" + this.username;
+
+        this.url_state = "https://my.tado.com/api/v2/homes/" + this.homeID +
+            "/zones/" + this.zoneID + "/state?password=" + this.password +
+            "&username=" + this.username;
+
+
+        this.emitter_devices = pollingtoevent(function(done) {
+            rp.get(platform.url_devices, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: true
+        });
+
+        this.emitter_state = pollingtoevent(function(done) {
+            rp.get(platform.url_state, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: true
+        });
 
     }
 
@@ -43,30 +79,30 @@ class THERMOSTAT {
         var accessory = this;
 
         this.informationService = new Service.AccessoryInformation()
-            .setCharacteristic(Characteristic.Name, this.name + " Thermo")
-            .setCharacteristic(Characteristic.Identify, this.name + " Thermo")
+            .setCharacteristic(Characteristic.Name, this.displayName + " Thermo")
+            .setCharacteristic(Characteristic.Identify, this.displayName + " Thermo")
             .setCharacteristic(Characteristic.Manufacturer, 'Tado GmbH')
             .setCharacteristic(Characteristic.Model, 'Thermostat')
             .setCharacteristic(Characteristic.SerialNumber, "T-" + this.serialNo)
             .setCharacteristic(Characteristic.FirmwareRevision, require('../package.json').version);
 
-        this.Thermostat = new Service.Thermostat(this.name + " Thermo");
+        this.Thermostat = new Service.Thermostat(this.displayName + " Thermo");
         this.BatteryService = new Service.BatteryService();
 
         this.BatteryService.getCharacteristic(Characteristic.ChargingState)
             .updateValue(2); //NO CHARGABLE
 
         this.BatteryService.getCharacteristic(Characteristic.BatteryLevel)
-            .on('get', this.getBatteryLevel.bind(this));
+            .updateValue(accessory.batteryLevel);
 
         this.BatteryService.getCharacteristic(Characteristic.StatusLowBattery)
-            .on('get', this.getStatusLowBattery.bind(this));
+            .updateValue(accessory.batteryStatus);
 
         this.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState)
-            .on('get', this.getCurrentHeatingCoolingState.bind(this));
+            .updateValue(accessory.currentstate);
 
         this.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState)
-            .on('get', this.getTargetHeatingCoolingState.bind(this))
+            .updateValue(accessory.targetstate)
             .on('set', this.setTargetHeatingCoolingState.bind(this));
 
         this.Thermostat.getCharacteristic(Characteristic.CurrentTemperature)
@@ -75,7 +111,7 @@ class THERMOSTAT {
                 maxValue: 100,
                 minStep: 0.1
             })
-            .on('get', this.getCurrentTemperature.bind(this));
+            .updateValue(accessory.temp);
 
         this.Thermostat.getCharacteristic(Characteristic.TargetTemperature)
             .setProps({
@@ -83,7 +119,7 @@ class THERMOSTAT {
                 maxValue: this.targetMaxValue,
                 minStep: 1
             })
-            .on('get', this.getTargetTemperature.bind(this))
+            .updateValue(accessory.target)
             .on('set', this.setTargetTemperature.bind(this));
 
         this.Thermostat.getCharacteristic(Characteristic.TemperatureDisplayUnits)
@@ -95,286 +131,139 @@ class THERMOSTAT {
                 maxValue: 100,
                 minStep: 0.01
             })
-            .on('get', this.getCurrentRelativeHumidity.bind(this));
+            .updateValue(accessory.humidity);
 
         //FAKEGATO
         this.historyService = new FakeGatoHistoryService("weather", this, {
             storage: 'fs',
-            disableTimer: false,
+            disableTimer: true,
             path: this.api.user.cachedAccessoryPath()
         });
 
-
-        (function poll() {
-            setTimeout(function() {
-                accessory.getHistory()
-                poll()
-            }, 5 * 60 * 1000)
-        })();
-
-        (function poll() {
-            setTimeout(function() {
-                accessory.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).getValue();
-                accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).getValue();
-                accessory.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).getValue();
-                accessory.Thermostat.getCharacteristic(Characteristic.TargetTemperature).getValue();
-                poll()
-            }, 5000)
-        })();
-
-        (function poll() {
-            setTimeout(function() {
-                accessory.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).getValue();
-                poll()
-            }, 60 * 60 * 1000)
-        })();
-
-        (function poll() {
-            setTimeout(function() {
-                accessory.BatteryService.getCharacteristic(Characteristic.BatteryLevel).getValue();
-                accessory.BatteryService.getCharacteristic(Characteristic.StatusLowBattery).getValue();
-                poll()
-            }, 5000)
-        })();
+        accessory._updateBatteryValues()
+        accessory._updateThermostatValues()
 
         return [this.informationService, this.Thermostat, this.BatteryService, this.historyService];
 
     }
 
-    getBatteryLevel(callback) {
+    _updateBatteryValues() {
+
         var self = this;
 
-        self.get.HOME_DEVICES()
-            .then(response => {
+        self.emitter_devices
+            .on("longpoll", function(data) {
 
-                var result = response;
+                var result = JSON.parse(data);
 
                 for (var i = 0; i < result.length; i++) {
 
                     if (result[i].serialNo.match(self.serialNo)) {
 
-                        var batteryStatus = result[i].batteryState;
-
-                        if (batteryStatus == "NORMAL") {
-                            callback(null, 100)
+                        if (result[i].batteryState == "NORMAL") {
+                            self.batteryLevel = 100;
+                            self.batteryStatus = 0;
                         } else {
-                            callback(null, 10)
+                            self.batteryLevel = 10;
+                            self.batteryStatus = 1;
                         }
 
                     }
 
                 }
 
-            })
-            .catch(err => {
-
-                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                    self.log(self.name + " Battery: No connection...");
-                } else {
-                    self.log(self.name + ": Error: " + err);
-                }
-
-            });
-    }
-
-    getStatusLowBattery(callback) {
-        var self = this;
-
-        self.get.HOME_DEVICES()
-            .then(response => {
-
-                var result = response;
-
-                for (var i = 0; i < result.length; i++) {
-
-                    if (result[i].serialNo.match(self.serialNo)) {
-
-                        var batteryStatus = result[i].batteryState;
-
-                        if (batteryStatus == "NORMAL") {
-                            callback(null, 0)
-                        } else {
-                            callback(null, 1)
-                        }
-
-                    }
-
-                }
+                self.BatteryService.getCharacteristic(Characteristic.BatteryLevel).updateValue(self.batteryLevel);
 
             })
-            .catch(err => {
-
-                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                    self.log(self.name + " Battery: No connection...");
-                } else {
-                    self.log(self.name + ": Error: " + err);
-                }
-
+            .on("error", function(err) {
+                console.log("%s", err);
+                self.BatteryService.getCharacteristic(Characteristic.BatteryLevel).updateValue(self.batteryLevel);
             });
+
     }
 
-    getCurrentState(callback) {
+    _updateThermostatValues() {
 
         var self = this;
 
-        self.get.STATE()
-            .then(response => {
+        self.emitter_state
+            .on("longpoll", function(data) {
 
-                var state = response;
+                var result = JSON.parse(data);
 
-                callback(null, state)
+                self.humidity = result.sensorDataPoints.humidity.percentage;
 
-            })
-            .catch(err => {
+                if (result.setting.power == "ON") {
 
-                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                    self.log("State: No connection...");
-                    callback(null, false)
-                } else {
-                    self.log(self.name + ": Error: " + err);
-                    callback(null, false)
-                }
+                    if (self.tempUnit == "CELSIUS") {
+                        self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
+                        self.targettemp = result.setting.temperature.celsius;
+                    } else {
+                        self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
+                        self.targettemp = result.setting.temperature.fahrenheit;
+                    }
 
-            });
+                    if (result.overlayType == null) {
 
-    }
-
-
-    getCurrentHeatingCoolingState(callback) {
-
-        var accessory = this;
-
-        accessory.getCurrentState(function(err, data) {
-
-            if (err) callback(err)
-            else {
-                if (data.setting.power == "ON") {
-
-                    if (data.overlayType == null) {
-
-                        callback(null, Characteristic.CurrentHeatingCoolingState.AUTO);
+                        self.currentstate = 0;
+                        self.targetstate = 3;
 
                     } else {
 
-                        if (Math.round(data.sensorDataPoints.insideTemperature.celsius) >= Math.round(data.setting.temperature.celsius)) {
-                            callback(null, Characteristic.CurrentHeatingCoolingState.COOL);
+                        if (Math.round(result.sensorDataPoints.insideTemperature.celsius) >= Math.round(result.setting.temperature.celsius)) {
+                            self.currentstate = 2;
+                            self.targetstate = 2;
+
                         } else {
-                            callback(null, Characteristic.CurrentHeatingCoolingState.HEAT);
+                            self.currentstate = 1;
+                            self.targetstate = 1;
                         }
 
                     }
 
                 } else {
-                    callback(null, Characteristic.CurrentHeatingCoolingState.OFF);
-                }
-            }
+                    self.currentstate = 0;
+                    self.targetstate = 0;
 
-        })
-
-    }
-
-    getTargetHeatingCoolingState(callback) {
-
-        var accessory = this;
-
-        accessory.getCurrentState(function(err, data) {
-
-            if (err) callback(err)
-            else {
-                if (data.setting.power == "ON") {
-
-                    if (data.overlayType == null) {
-
-                        callback(null, Characteristic.TargetHeatingCoolingState.AUTO);
-
+                    if (self.tempUnit == "CELSIUS") {
+                        self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
+                        self.targettemp = result.sensorDataPoints.insideTemperature.celsius;
                     } else {
-
-                        if (Math.round(data.sensorDataPoints.insideTemperature.celsius) >= Math.round(data.setting.temperature.celsius)) {
-                            callback(null, Characteristic.TargetHeatingCoolingState.COOL);
-                        } else {
-                            callback(null, Characteristic.TargetHeatingCoolingState.HEAT);
-                        }
-
+                        self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
+                        self.targettemp = result.sensorDataPoints.insideTemperature.fahrenheit;
                     }
-
-                } else {
-                    callback(null, Characteristic.TargetHeatingCoolingState.OFF);
                 }
-            }
-        })
 
-    }
-
-
-    getHistory() {
-
-        var accessory = this;
-
-        accessory.getCurrentState(function(err, data) {
-
-            if (err) accessory.log(err)
-            else {
-                accessory.historyService.addEntry({
+                self.historyService.addEntry({
                     time: moment().unix(),
-                    temp: data.sensorDataPoints.insideTemperature.celsius,
+                    temp: self.currenttemp,
                     pressure: 1029,
-                    humidity: data.sensorDataPoints.humidity.percentage
+                    humidity: self.humidity
                 });
 
-            }
-        })
-    }
+                self.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.currenttemp);
+                self.Thermostat.getCharacteristic(Characteristic.TargetTemperature).updateValue(self.targettemp);
+                self.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(self.humidity);
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(self.currentstate);
+                self.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).updateValue(self.targetstate);
 
-
-    getCurrentTemperature(callback) {
-
-        var accessory = this;
-
-        accessory.getCurrentState(function(err, data) {
-
-            if (err) callback(err)
-            else {
-                if (accessory.tempUnit == "CELSIUS") {
-                    callback(null, data.sensorDataPoints.insideTemperature.celsius);
-                } else {
-                    callback(null, data.sensorDataPoints.insideTemperature.fahrenheit);
-                }
-            }
-        })
-
-    }
-
-    getTargetTemperature(callback) {
-
-        var accessory = this;
-
-        accessory.getCurrentState(function(err, data) {
-
-            if (err) callback(err)
-            else {
-                if (data.setting.power == "ON") {
-                    if (accessory.tempUnit == "CELSIUS") {
-                        callback(null, data.setting.temperature.celsius);
-                    } else {
-                        callback(null, data.setting.temperature.fahrenheit);
-                    }
-                } else {
-                    if (accessory.tempUnit == "CELSIUS") {
-                        callback(null, data.sensorDataPoints.insideTemperature.celsius);
-                    } else {
-                        callback(null, data.sensorDataPoints.insideTemperature.fahrenheit);
-                    }
-                }
-            }
-        })
+            })
+            .on("error", function(err) {
+                console.log("%s", err);
+                self.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.currenttemp);
+                self.Thermostat.getCharacteristic(Characteristic.TargetTemperature).updateValue(self.targettemp);
+                self.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(self.humidity);
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(self.currentstate);
+                self.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).updateValue(self.targetstate);
+            });
 
     }
 
     getTemperatureDisplayUnits(callback) {
 
-        var accessory = this;
+        var self = this;
 
-        if (accessory.tempUnit == "CELSIUS") {
+        if (self.tempUnit == "CELSIUS") {
             callback(null, Characteristic.TemperatureDisplayUnits.CELSIUS);
         } else {
             callback(null, Characteristic.TemperatureDisplayUnits.FAHRENHEIT);
@@ -382,145 +271,101 @@ class THERMOSTAT {
 
     }
 
-    getCurrentRelativeHumidity(callback) {
-
-        var accessory = this;
-
-        accessory.getCurrentState(function(err, data) {
-
-            if (err) callback(err)
-            else {
-                callback(null, data.sensorDataPoints.humidity.percentage);
-            }
-        })
-
-    }
-
-
     setTargetHeatingCoolingState(state, callback) {
 
         var self = this;
 
-        self.getCurrentState(function(err, data) {
+        self.get = new HK_REQS(self.username, self.password, self.homeID, {
+            "token": process.argv[2]
+        }, self.zoneID, self.heatValue, self.coolValue, self.currenttemp);
 
-            var currentValue = Math.round(data.sensorDataPoints.insideTemperature.celsius);
+        switch (state) {
+            case Characteristic.TargetHeatingCoolingState.OFF:
 
-            self.get = new HK_REQS(self.username, self.password, self.homeID, {
-                "token": process.argv[2]
-            }, self.zoneID, self.heatValue, self.coolValue, currentValue);
+                self.get.STATE_OFF()
+                    .then(response => {
 
-            switch (state) {
-                case Characteristic.TargetHeatingCoolingState.OFF:
+                        self.log(self.displayName + ": Switch off");
+                        callback()
 
-                    self.get.STATE_OFF()
-                        .then(response => {
+                    })
+                    .catch(err => {
 
-                            self.log(self.name + ": Switch off");
+                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                            self.log(self.displayName + ": No connection - Trying to reconnect...");
                             callback()
-
-                        })
-                        .catch(err => {
-
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log(self.name + ": No connection - Trying to reconnect...");
-                                callback()
-                            } else {
-                                self.log(self.name + ": Error: " + err);
-                                callback()
-                            }
-
-                        });
-
-                    break;
-
-                case Characteristic.TargetHeatingCoolingState.HEAT:
-
-                    self.get.STATE_HEAT()
-                        .then(response => {
-
-                            self.log(self.name + ": Switch to heat mode");
+                        } else {
+                            self.log(self.displayName + ": Error: " + err);
                             callback()
-
-                        })
-                        .catch(err => {
-
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log(self.name + ": No connection - Trying to reconnect...");
-                                callback()
-                            } else {
-                                self.log(self.name + ": Error: " + err);
-                                callback()
-                            }
-
-                        });
-
-                    break;
-
-                case Characteristic.TargetHeatingCoolingState.COOL:
-
-                    self.get.STATE_COOL()
-                        .then(response => {
-
-                            self.log(self.name + ": Switch to cool mode");
-                            callback()
-
-                        })
-                        .catch(err => {
-
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log(self.name + ": No connection - Trying to reconnect...");
-                                callback()
-                            } else {
-                                self.log(self.name + ": Error: " + err);
-                                callback()
-                            }
-
-                        });
-
-                    break;
-
-                case Characteristic.TargetHeatingCoolingState.AUTO:
-
-
-                    if (self.delaytimer > 0) {
-
-                        self.log(self.name + ": Switching to automatic mode in " + self.delaytimer / 1000 + " seconds...");
-
-                        function sleep(time) {
-                            return new Promise((resolve) => setTimeout(resolve, time));
                         }
 
-                        sleep(self.delaytimer).then(() => {
+                    });
 
-                            self.get.STATE_AUTO()
-                                .then(response => {
+                break;
 
-                                    self.log(self.name + ": Automatic mode on");
-                                    self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
-                                    callback()
+            case Characteristic.TargetHeatingCoolingState.HEAT:
 
-                                })
-                                .catch(err => {
+                self.get.STATE_HEAT()
+                    .then(response => {
 
-                                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                        self.log(self.name + ": No connection - Trying to reconnect...");
-                                        callback()
-                                    } else {
-                                        self.log(self.name + ": Error: " + err);
-                                        callback()
-                                    }
+                        self.log(self.displayName + ": Switch to heat mode");
+                        callback()
 
-                                });
+                    })
+                    .catch(err => {
 
-                        });
+                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                            self.log(self.displayName + ": No connection - Trying to reconnect...");
+                            callback()
+                        } else {
+                            self.log(self.displayName + ": Error: " + err);
+                            callback()
+                        }
 
-                    } else {
+                    });
 
-                        self.log(self.name + ": Switching to automatic mode now");
+                break;
+
+            case Characteristic.TargetHeatingCoolingState.COOL:
+
+                self.get.STATE_COOL()
+                    .then(response => {
+
+                        self.log(self.displayName + ": Switch to cool mode");
+                        callback()
+
+                    })
+                    .catch(err => {
+
+                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                            self.log(self.displayName + ": No connection - Trying to reconnect...");
+                            callback()
+                        } else {
+                            self.log(self.displayName + ": Error: " + err);
+                            callback()
+                        }
+
+                    });
+
+                break;
+
+            case Characteristic.TargetHeatingCoolingState.AUTO:
+
+
+                if (self.delaytimer > 0) {
+
+                    self.log(self.displayName + ": Switching to automatic mode in " + self.delaytimer / 1000 + " seconds...");
+
+                    function sleep(time) {
+                        return new Promise((resolve) => setTimeout(resolve, time));
+                    }
+
+                    sleep(self.delaytimer).then(() => {
 
                         self.get.STATE_AUTO()
                             .then(response => {
 
+                                self.log(self.displayName + ": Automatic mode on");
                                 self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
                                 callback()
 
@@ -528,65 +373,82 @@ class THERMOSTAT {
                             .catch(err => {
 
                                 if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                    self.log(self.name + ": No connection - Trying to reconnect...");
+                                    self.log(self.displayName + ": No connection - Trying to reconnect...");
                                     callback()
                                 } else {
-                                    self.log(self.name + ": Error: " + err);
+                                    self.log(self.displayName + ": Error: " + err);
                                     callback()
                                 }
 
                             });
 
-                    }
+                    });
 
-                    break;
-            }
+                } else {
 
-        })
+                    self.log(self.displayName + ": Switching to automatic mode now");
+
+                    self.get.STATE_AUTO()
+                        .then(response => {
+
+                            self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
+                            callback()
+
+                        })
+                        .catch(err => {
+
+                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                                self.log(self.displayName + ": No connection - Trying to reconnect...");
+                                callback()
+                            } else {
+                                self.log(self.displayName + ": Error: " + err);
+                                callback()
+                            }
+
+                        });
+
+                }
+
+                break;
+        }
 
     }
 
     setTargetTemperature(value, callback) {
 
-        var accessory = this;
+        var self = this;
 
-        accessory.getCurrentState(function(err, data) {
+        self.get = new HK_REQS(self.username, self.password, self.homeID, {
+            "token": process.argv[2]
+        }, self.zoneID, self.heatValue, self.coolValue, self.currenttemp, value);
 
-            accessory.get = new HK_REQS(accessory.username, accessory.password, accessory.homeID, {
-                "token": process.argv[2]
-            }, accessory.zoneID, accessory.heatValue, accessory.coolValue, accessory.currentValue, value);
+        if (self.targetstate == 0) {
+            self.log("Can't set new Temperature, Thermostat is off");
+            callback()
+        } else if (self.targetstate == 3) {
+            self.log("Can't set new Temperature, Thermostat is in auto mode");
+            callback()
+        } else {
+            self.get.STATE_NEWTEMP()
+                .then(response => {
 
-            var tarstate = accessory.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).value;
+                    self.log(self.displayName + ": " + value);
+                    callback()
 
-            if (tarstate == 0) {
-                accessory.log("Can't set new Temperature, Thermostat is off");
-                callback()
-            } else if (tarstate == 3) {
-                accessory.log("Can't set new Temperature, Thermostat is in auto mode");
-                callback()
-            } else {
-                accessory.get.STATE_NEWTEMP()
-                    .then(response => {
+                })
+                .catch(err => {
 
-                        accessory.log(accessory.name + ": " + value);
+                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                        self.log("Thermostat: No connection...");
                         callback()
+                    } else {
+                        self.log(self.displayName + ": Error: " + err);
+                        callback()
+                    }
 
-                    })
-                    .catch(err => {
+                });
 
-                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                            accessory.log("Thermostat: No connection...");
-                            callback()
-                        } else {
-                            accessory.log(self.name + ": Error: " + err);
-                            callback()
-                        }
-
-                    });
-
-            }
-
-        })
+        }
 
     }
 }
