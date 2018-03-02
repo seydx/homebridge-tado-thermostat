@@ -28,9 +28,10 @@
   },
   "dependencies": {
     "async": "*",
-    "request":"*",
+    "fakegato-history": "^0.4.3",
+    "moment": "^2.18.1",
+    "request": "*",
     "request-promise": "^4.2.2",
-    "fakegato-history":"^0.4.0",
-    "moment": "^2.18.1"
+    "polling-to-event": "^2.1.0"
   }
 }
