@@ -1,9 +1,12 @@
 const moment = require('moment');
 var rp = require("request-promise");
-var HK_REQS = require('./Requests.js');
+var pollingtoevent = require("polling-to-event");
 
-var Accessory, Service, Characteristic, FakeGatoHistoryService;
-
+var Accessory, 
+	Service, 
+	Characteristic, 
+	FakeGatoHistoryService;
+	
 class WEATHER {
 
     constructor(log, config, api) {
@@ -20,15 +23,24 @@ class WEATHER {
         this.log = log;
         this.config = config;
         this.name = config.name;
+        this.displayName = config.name;
         this.homeID = config.homeID;
         this.username = config.username;
         this.password = config.password;
-        this.polling = config.polling;
-        this.interval = config.interval
         this.tempUnit = config.tempUnit;
 
-        this.get = new HK_REQS(platform.username, platform.password, platform.homeID, {
-            "token": process.argv[2]
+        this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
+            "/weather?password=" + this.password +
+            "&username=" + this.username;
+
+        this.temp = 0;
+
+        this.emitter = pollingtoevent(function(done) {
+            rp.get(platform.url, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: true
         });
 
     }
@@ -53,7 +65,10 @@ class WEATHER {
                 maxValue: 100,
                 minStep: 0.01
             })
-            .on('get', this.getCurrentTemperature.bind(this));
+            .updateValue(accessory.state)
+
+        this.Weather.getCharacteristic(Characteristic.TemperatureDisplayUnits)
+            .on('get', this.getTemperatureDisplayUnits.bind(this))
 
         //FAKEGATO
         this.historyService = new FakeGatoHistoryService("weather", this, {
@@ -62,72 +77,47 @@ class WEATHER {
             path: this.api.user.cachedAccessoryPath()
         });
 
-        if (this.polling) {
-            (function poll() {
-                setTimeout(function() {
-                    accessory.Weather.getCharacteristic(Characteristic.CurrentTemperature).getValue();
-                    poll()
-                }, accessory.interval)
-            })();
-        }
+        accessory.getCurrentTemperature()
 
         return [this.informationService, this.Weather, this.historyService];
 
     }
 
-    getCurrentWeather(callback) {
+    getCurrentTemperature() {
 
         var self = this;
 
-        self.get.WEATHER()
-            .then(response => {
+        self.emitter
+            .on("longpoll", function(data) {
 
-                var state = response;
+                var result = JSON.parse(data);
 
-                callback(null, state)
+                if (self.tempUnit == "CELSIUS") {
+
+                    self.temp = result.outsideTemperature.celsius;
+                    //self.log("Outside temperature: " + self.temp + " degrees");
+
+                } else {
+	                
+                    self.temp = result.outsideTemperature.fahrenheit;
+                    //self.log("Outside temperature: " + self.temp + " fahrenheit");
+
+                }
+
+                self.historyService.addEntry({
+                    time: moment().unix(),
+                    temp: self.temp,
+                    pressure: 0,
+                    humidity: 0
+                });
+                
+                self.Weather.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.temp);
 
             })
-            .catch(err => {
-
-                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                    self.log(self.name + ": No connection...");
-                    callback(null, false)
-                } else {
-                    self.log(self.name + ": Error: " + err);
-                    callback(null, false)
-                }
-
+            .on("error", function(err) {
+                console.log("%s", err);
+                self.Weather.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.temp);
             });
-
-    }
-
-    getCurrentTemperature(callback) {
-
-        var accessory = this;
-
-        accessory.getCurrentWeather(function(err, data) {
-
-            if (err) callback(err)
-            else {
-                if (accessory.tempUnit == "CELSIUS") {
-                    accessory.historyService.addEntry({
-                        time: moment().unix(),
-                        temp: data.outsideTemperature.celsius,
-                        pressure: 0,
-                        humidity: 0
-                    });
-                    callback(null, data.outsideTemperature.celsius);
-                } else {
-                    accessory.historyService.addEntry({
-                        time: moment().unix(),
-                        temp: data.outsideTemperature.fahrenheit,
-                        pressure: 0,
-                        humidity: 0
-                    });
-                    callback(null, data.outsideTemperature.fahrenheit);
-                }
-            }
-        })
 
     }
 
