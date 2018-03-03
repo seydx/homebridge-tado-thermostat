@@ -103,6 +103,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Weather State Service
 - [x] long polling
 - [ ] Issue: Motion sensor last activity bug
+- [ ] Better error handling
 - [ ] Dynamic Platform
 
 
