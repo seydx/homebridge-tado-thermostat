@@ -157,12 +157,16 @@ TadoThermostatPlatform.prototype = {
                                 if (zones[i].type.match("HEATING")) {
 
                                     var devices = zones[i].devices;
+                                    var zonename = zones[i].name;
 
                                     for (var j = 0; j < devices.length; j++) {
+
+                                        devices.length > 1 ? zonename = zones[i].name + " " + j : zonename = zones[i].name;
+
                                         if (devices[j].deviceType.match("VA01") || devices[j].deviceType.match("RU01")) {
 
                                             toConfig = {
-                                                name: zones[i].name + " " + j,
+                                                name: zonename,
                                                 id: zones[i].id,
                                                 homeID: self.homeID,
                                                 username: self.username,
