@@ -87,6 +87,7 @@ class USER {
             "&username=" + this.username;
 
         this.state = 0;
+        this.now = 0;
 
         this.emitter = pollingtoevent(function(done) {
             rp.get(platform.url, function(err, req, data) {
@@ -144,10 +145,13 @@ class USER {
             path: this.api.user.cachedAccessoryPath()
         });
 
-        setTimeout(function() {
-            accessory.Motion.getCharacteristic(EveMotionDuration).getValue();
-            accessory.Motion.getCharacteristic(EveMotionLastActivation).getValue();
-        }, 2000)
+        (function poll() {
+            setTimeout(function() {
+                accessory.Motion.getCharacteristic(EveMotionDuration).getValue();
+                accessory.Motion.getCharacteristic(EveMotionLastActivation).getValue();
+                poll()
+            }, 2000)
+        })();
 
         return [this.informationService, this.Motion, this.historyService];
 
@@ -170,14 +174,17 @@ class USER {
 
                         if (result[i].settings.geoTrackingEnabled == true) {
                             userStatus = result[i].location.atHome;
+                            //userStatus = result[i].settings.geoTrackingEnabled;
                         }
 
                         if (userStatus == true) {
                             //self.log(self.name + " is at home!");
                             self.state = 1;
+                            self.now = moment().unix();
                         } else {
                             //self.log("Bye! " + self.name);
                             self.state = 0;
+                            self.now = moment().unix();
                         }
 
                     }
@@ -221,10 +228,12 @@ class USER {
 
                 if (c > 0) {
                     self.state = 1
-                        //self.log("Anyone at home");
+                    self.now = moment().unix();
+                    //self.log("Anyone at home");
                 } else {
                     self.state = 0
-                        //self.log("No one at home");
+                    self.now = moment().unix();
+                    //self.log("No one at home");
                 }
 
                 self.historyService.addEntry({
@@ -246,16 +255,17 @@ class USER {
 
         var self = this;
 
-        this.activated = 0;
-        this.lastactivity = 0;
-
         if (self.Motion.getCharacteristic(Characteristic.MotionDetected).value == true) {
-            self.activated = moment().unix();
-            self.lastactivity = self.activated;
 
-            callback(null, self.activated)
+            var last = moment().unix();
+
+            callback(null, last)
+
         } else {
-            callback(null, self.lastactivity)
+
+            var last = self.now - self.historyService.getInitialTime();
+
+            callback(null, last)
         }
 
     }
