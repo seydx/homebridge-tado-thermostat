@@ -7,6 +7,7 @@ var Tado_Weather = require('./src/Weather.js');
 var Tado_WeatherService = require('./src/WeatherService.js');
 var Tado_Occupancy = require('./src/Occupancy.js');
 var Tado_Windows = require('./src/Window.js');
+var Tado_Switch = require('./src/Switch.js');
 
 var Accessory, Service, Characteristic;
 
@@ -37,15 +38,12 @@ function TadoThermostatPlatform(log, config, api) {
     this.heatValue = config["heatValue"] || 4;
     this.delaytimer = (config["delaytimer"] * 1000);
 
-    //Weather Config
+    //Extras Config
     this.weatherEnabled = config["weatherEnabled"] || false;
     this.weatherServiceEnabled = config["weatherServiceEnabled"] || false;
-
-    //Occupancy Config
     this.occupancyEnabled = config["occupancyEnabled"] || false;
-
-    //Open Window Detection Config
     this.windowDetection = config["windowDetection"] || false;
+    this.centralSwitch = config["centralSwitch"] || false;
 
 }
 
@@ -53,6 +51,7 @@ TadoThermostatPlatform.prototype = {
     accessories: function(callback) {
 
         var accessoriesArray = []
+        this.idArray = []
         var self = this;
 
         async.waterfall([
@@ -159,6 +158,8 @@ TadoThermostatPlatform.prototype = {
 
                             for (var i = 0; i < zones.length; i++) {
                                 if (zones[i].type.match("HEATING")) {
+
+                                    self.idArray.push(zones[i].id);
 
                                     var devices = zones[i].devices;
                                     var zonename = zones[i].name;
@@ -343,7 +344,7 @@ TadoThermostatPlatform.prototype = {
                             var windowArray = []
 
                             for (var i = 0; i < windows.length; i++) {
-                                if (windows[i].openWindowDetection.supported == true) {
+                                if (windows[i].openWindowDetection.supported == true && self.windowDetection == true) {
 
                                     if (windows[i].openWindowDetection.enabled == true) {
 
@@ -440,6 +441,23 @@ TadoThermostatPlatform.prototype = {
                     }
                     var weatherServiceAccessory = new Tado_WeatherService(self.log, weatherServiceConfig, self.api)
                     accessoriesArray.push(weatherServiceAccessory);
+                }
+                next();
+            },
+
+            // set Switch
+            function(next) {
+                if (self.centralSwitch) {
+
+                    var centralSwitchConfig = {
+                        name: "Central Switch",
+                        homeID: self.homeID,
+                        username: self.username,
+                        password: self.password,
+                        roomids: JSON.stringify(self.idArray)
+                    }
+                    var centralSwitchAccessory = new Tado_Switch(self.log, centralSwitchConfig, self.api)
+                    accessoriesArray.push(centralSwitchAccessory);
                 }
                 next();
             }
