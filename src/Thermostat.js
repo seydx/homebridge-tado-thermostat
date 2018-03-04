@@ -33,8 +33,9 @@ class THERMOSTAT {
         this.targetMaxValue = config.targetMaxValue;
         this.serialNo = config.serialNo;
         this.delaytimer = config.delaytimer;
+        this.timeout = config.timeout;
 
-        this.batterLevel = 100;
+        this.batteryLevel = 100;
         this.batteryStatus = 0;
         this.humidity = 0;
         this.currenttemp = 0;
@@ -61,7 +62,8 @@ class THERMOSTAT {
                 done(err, data);
             });
         }, {
-            longpolling: true
+            longpolling: false,
+            interval: 10000
         });
 
         this.emitter_state = pollingtoevent(function(done) {
@@ -69,7 +71,8 @@ class THERMOSTAT {
                 done(err, data);
             });
         }, {
-            longpolling: true
+            longpolling: false,
+            interval: 5000
         });
 
     }
@@ -152,7 +155,7 @@ class THERMOSTAT {
         var self = this;
 
         self.emitter_devices
-            .on("longpoll", function(data) {
+            .on("poll", function(data) {
 
                 var result = JSON.parse(data);
 
@@ -187,7 +190,7 @@ class THERMOSTAT {
         var self = this;
 
         self.emitter_state
-            .on("longpoll", function(data) {
+            .on("poll", function(data) {
 
                 var result = JSON.parse(data);
 
