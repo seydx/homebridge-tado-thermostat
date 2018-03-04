@@ -1,6 +1,6 @@
-const moment = require('moment');
-var rp = require("request-promise");
-var pollingtoevent = require("polling-to-event");
+var moment = require('moment'),
+    rp = require("request-promise"),
+    pollingtoevent = require("polling-to-event");
 
 var Accessory,
     Service,
@@ -28,13 +28,12 @@ class WEATHER {
         this.username = config.username;
         this.password = config.password;
         this.tempUnit = config.tempUnit;
-        this.timeout = config.timeout;
+
+        !this.temp ? this.temp = 0 : this.temp;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/weather?password=" + this.password +
             "&username=" + this.username;
-
-        this.temp = 0;
 
         this.emitter = pollingtoevent(function(done) {
             rp.get(platform.url, function(err, req, data) {
@@ -48,8 +47,6 @@ class WEATHER {
     }
 
     getServices() {
-
-        var accessory = this;
 
         this.informationService = new Service.AccessoryInformation()
             .setCharacteristic(Characteristic.Name, this.name)
@@ -67,16 +64,15 @@ class WEATHER {
                 maxValue: 100,
                 minStep: 0.01
             })
-            .updateValue(accessory.state)
+            .updateValue(this.state);
 
-        //FAKEGATO
         this.historyService = new FakeGatoHistoryService("weather", this, {
             storage: 'fs',
             disableTimer: true,
             path: this.api.user.cachedAccessoryPath()
         });
 
-        accessory.getCurrentTemperature()
+        this.getCurrentTemperature()
 
         return [this.informationService, this.Weather, this.historyService];
 
@@ -91,17 +87,9 @@ class WEATHER {
 
                 var result = JSON.parse(data);
 
-                if (self.tempUnit == "CELSIUS") {
-
-                    self.temp = result.outsideTemperature.celsius;
-                    //self.log("Outside temperature: " + self.temp + " degrees");
-
-                } else {
-
+                self.tempUnit == "CELSIUS" ?
+                    self.temp = result.outsideTemperature.celsius :
                     self.temp = result.outsideTemperature.fahrenheit;
-                    //self.log("Outside temperature: " + self.temp + " fahrenheit");
-
-                }
 
                 self.historyService.addEntry({
                     time: moment().unix(),
@@ -110,12 +98,15 @@ class WEATHER {
                     humidity: 0
                 });
 
-                self.Weather.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.temp);
+                self.Weather.getCharacteristic(Characteristic.CurrentTemperature)
+                    .updateValue(self.temp);
 
             })
             .on("error", function(err) {
-                console.log("%s", err);
-                self.Weather.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.temp);
+                self.log("An Error occured: %s", err);
+                self.log("Setting Current Temperature to: " + self.temp);
+                self.Weather.getCharacteristic(Characteristic.CurrentTemperature)
+                    .updateValue(self.temp);
             });
 
     }
