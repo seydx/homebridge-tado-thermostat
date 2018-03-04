@@ -1,6 +1,6 @@
-var rp = require("request-promise");
-var inherits = require("util").inherits;
-var pollingtoevent = require("polling-to-event");
+var rp = require("request-promise"),
+    inherits = require("util").inherits,
+    pollingtoevent = require("polling-to-event");
 
 var Accessory,
     Service,
@@ -40,13 +40,12 @@ class WEATHERSERVICE {
         this.homeID = config.homeID;
         this.username = config.username;
         this.password = config.password;
-        this.timeout = config.timeout;
+
+        !this.weather ? this.weather = "" : this.weather;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/weather?password=" + this.password +
             "&username=" + this.username;
-
-        this.weather = "";
 
         this.emitter = pollingtoevent(function(done) {
             rp.get(platform.url, function(err, req, data) {
@@ -61,8 +60,6 @@ class WEATHERSERVICE {
 
     getServices() {
 
-        var accessory = this;
-
         this.informationService = new Service.AccessoryInformation()
             .setCharacteristic(Characteristic.Name, this.name)
             .setCharacteristic(Characteristic.Identify, this.name)
@@ -75,9 +72,9 @@ class WEATHERSERVICE {
 
         this.weatherService.addCharacteristic(WeatherCharacteristic);
         this.weatherService.getCharacteristic(WeatherCharacteristic)
-            .updateValue(accessory.weather);
+            .updateValue(this.weather);
 
-        accessory.getCurrentWeatherState()
+        this.getCurrentWeatherState()
 
         return [this.informationService, this.weatherService];
 
@@ -93,13 +90,15 @@ class WEATHERSERVICE {
                 var result = JSON.parse(data);
                 self.weather = result.weatherState.value;
 
-                //self.log("Current Weather state: " + self.weather);
-                self.weatherService.getCharacteristic(WeatherCharacteristic).updateValue(self.weather);
+                self.weatherService.getCharacteristic(WeatherCharacteristic)
+                    .updateValue(self.weather);
 
             })
             .on("error", function(err) {
-                console.log("%s", err);
-                self.weatherService.getCharacteristic(WeatherCharacteristic).updateValue(self.weather);
+                self.log("An Error occured: %s", err);
+                self.log("Setting Current Weather state to: " + self.weather);
+                self.weatherService.getCharacteristic(WeatherCharacteristic)
+                    .updateValue(self.weather);
             });
 
     }
