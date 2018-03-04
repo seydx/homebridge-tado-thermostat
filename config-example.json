@@ -18,6 +18,7 @@
         "weatherServiceEnabled":false,
         "occupancyEnabled":false,
         "windowDetection":false,
+        "centralSwitch": false
    }
  ]
 }
