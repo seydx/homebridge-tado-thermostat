@@ -82,7 +82,8 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "weatherEnabled": true,
     "weatherServiceEnabled": false,
     "occupancyEnabled": false,
-    "windowDetection": false
+    "windowDetection": false,
+    "centralSwitch": false
     }
   ]
 }
@@ -104,6 +105,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | weatherServiceEnabled | No | Enable Service to check for weather state, eg. cloudy, sunny, clear etc. Only with Elgato EVE app! (Default: false) |
 | occupancyEnabled | No | Exposes occupancy/motion sensors for all registred persons (only if geotracking is enabled in tado! - Default: false) | |
 | windowDetection | No | Exposes window sensors for each room (only if open weather detection is enabled in tado! - Default: false) |
+| centralSwitch | No | Exposes a switch to turning on/off all thermostats with just one click! (Default: false) |
 
 
 ## W.I.P features
@@ -112,7 +114,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Weather Sensor
 - [x] Occupancy Sensor
 - [x] Weather State Service
-- [ ] Central switch to put all thermostats in off mode
+- [x] Central switch to put all thermostats in off/on mode
 - [ ] Hot Water
 - [ ] Dynamic Platform
 
