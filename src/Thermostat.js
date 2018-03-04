@@ -1,9 +1,12 @@
-const moment = require('moment');
-var rp = require("request-promise");
-var HK_REQS = require('./Requests.js');
-var pollingtoevent = require("polling-to-event");
+var moment = require('moment'),
+    rp = require("request-promise"),
+    HK_REQS = require('./Requests.js'),
+    pollingtoevent = require("polling-to-event");
 
-var Accessory, Service, Characteristic, FakeGatoHistoryService;
+var Accessory,
+    Service,
+    Characteristic,
+    FakeGatoHistoryService;
 
 class THERMOSTAT {
 
@@ -33,15 +36,14 @@ class THERMOSTAT {
         this.targetMaxValue = config.targetMaxValue;
         this.serialNo = config.serialNo;
         this.delaytimer = config.delaytimer;
-        this.timeout = config.timeout;
 
-        this.batteryLevel = 100;
-        this.batteryStatus = 0;
-        this.humidity = 0;
-        this.currenttemp = 0;
-        this.targettemp = 0;
-        this.currentstate = 0;
-        this.targetstate = 3;
+        !this.batteryLevel ? this.batteryLevel = 100 : this.batteryLevel;
+        !this.batteryStatus ? this.batteryStatus = 0 : this.batteryStatus;
+        !this.humidity ? this.humidity = 0 : this.humidity;
+        !this.currenttemp ? this.currenttemp = 0 : this.currenttemp;
+        !this.targettemp ? this.targettemp = 0 : this.targettemp;
+        !this.currentstate ? this.currentstate = 0 : this.currentstate;
+        !this.targetstate ? this.targetstate = 3 : this.targetstate;
 
         this.get = new HK_REQS(platform.username, platform.password, platform.homeID, {
             "token": process.argv[2]
@@ -93,19 +95,19 @@ class THERMOSTAT {
         this.BatteryService = new Service.BatteryService();
 
         this.BatteryService.getCharacteristic(Characteristic.ChargingState)
-            .updateValue(2); //NO CHARGABLE
+            .updateValue(2);
 
         this.BatteryService.getCharacteristic(Characteristic.BatteryLevel)
-            .updateValue(accessory.batteryLevel);
+            .updateValue(this.batteryLevel);
 
         this.BatteryService.getCharacteristic(Characteristic.StatusLowBattery)
-            .updateValue(accessory.batteryStatus);
+            .updateValue(this.batteryStatus);
 
         this.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState)
-            .updateValue(accessory.currentstate);
+            .updateValue(this.currentstate);
 
         this.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState)
-            .updateValue(accessory.targetstate)
+            .updateValue(this.targetstate)
             .on('set', this.setTargetHeatingCoolingState.bind(this));
 
         this.Thermostat.getCharacteristic(Characteristic.CurrentTemperature)
@@ -114,7 +116,7 @@ class THERMOSTAT {
                 maxValue: 100,
                 minStep: 0.1
             })
-            .updateValue(accessory.temp);
+            .updateValue(this.temp);
 
         this.Thermostat.getCharacteristic(Characteristic.TargetTemperature)
             .setProps({
@@ -122,7 +124,7 @@ class THERMOSTAT {
                 maxValue: this.targetMaxValue,
                 minStep: 1
             })
-            .updateValue(accessory.target)
+            .updateValue(this.target)
             .on('set', this.setTargetTemperature.bind(this));
 
         this.Thermostat.getCharacteristic(Characteristic.TemperatureDisplayUnits)
@@ -134,22 +136,21 @@ class THERMOSTAT {
                 maxValue: 100,
                 minStep: 0.01
             })
-            .updateValue(accessory.humidity);
+            .updateValue(this.humidity);
 
-        //FAKEGATO
         this.historyService = new FakeGatoHistoryService("weather", this, {
             storage: 'fs',
             disableTimer: true,
             path: this.api.user.cachedAccessoryPath()
         });
 
-        accessory._updateBatteryValues();
-        accessory._updateThermostatValues();
-        
+        this._updateBatteryValues();
+        this._updateThermostatValues();
+
         (function poll() {
             setTimeout(function() {
-                getHistory()
-                poll()
+                accessory.getHistory();
+                poll();
             }, 5 * 60 * 1000)
         })();
 
@@ -161,7 +162,7 @@ class THERMOSTAT {
 
         var self = this;
 
-        self.emitter_devices
+        this.emitter_devices
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
@@ -182,12 +183,20 @@ class THERMOSTAT {
 
                 }
 
-                self.BatteryService.getCharacteristic(Characteristic.BatteryLevel).updateValue(self.batteryLevel);
+                self.BatteryService.getCharacteristic(Characteristic.BatteryLevel)
+                    .updateValue(self.batteryLevel);
+                self.BatteryService.getCharacteristic(Characteristic.StatusLowBattery)
+                    .updateValue(self.batteryStatus);
 
             })
             .on("error", function(err) {
-                console.log("%s", err);
-                self.BatteryService.getCharacteristic(Characteristic.BatteryLevel).updateValue(self.batteryLevel);
+                self.log("An Error occured: %s", err);
+                self.log("Setting Battery Level to: " + self.batteryLevel);
+                self.log("Setting Battery Status to: " + self.batteryStatus);
+                self.BatteryService.getCharacteristic(Characteristic.BatteryLevel)
+                    .updateValue(self.batteryLevel);
+                self.BatteryService.getCharacteristic(Characteristic.StatusLowBattery)
+                    .updateValue(self.batteryStatus);
             });
 
     }
@@ -196,7 +205,7 @@ class THERMOSTAT {
 
         var self = this;
 
-        self.emitter_state
+        this.emitter_state
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
@@ -252,7 +261,12 @@ class THERMOSTAT {
 
             })
             .on("error", function(err) {
-                console.log("%s", err);
+                self.log("An Error occured: %s", err);
+                self.log("Setting Current Temperature to: " + self.currenttemp);
+                self.log("Setting Target Temperature to: " + self.targettemp);
+                self.log("Setting Humidty to: " + self.humidity);
+                self.log("Setting Current State to: " + self.currentstate);
+                self.log("Setting Target State to: " + self.targetstate);
                 self.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.currenttemp);
                 self.Thermostat.getCharacteristic(Characteristic.TargetTemperature).updateValue(self.targettemp);
                 self.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(self.humidity);
@@ -261,25 +275,25 @@ class THERMOSTAT {
             });
 
     }
-    
-    getHistory(){
-        self.historyService.addEntry({
+
+    getHistory() {
+
+        var self = this;
+
+        this.historyService.addEntry({
             time: moment().unix(),
             temp: self.currenttemp,
             pressure: 1029,
             humidity: self.humidity
         });
+
     }
 
     getTemperatureDisplayUnits(callback) {
 
-        var self = this;
-
-        if (self.tempUnit == "CELSIUS") {
-            callback(null, Characteristic.TemperatureDisplayUnits.CELSIUS);
-        } else {
+        this.tempUnit == "CELSIUS" ?
+            callback(null, Characteristic.TemperatureDisplayUnits.CELSIUS) :
             callback(null, Characteristic.TemperatureDisplayUnits.FAHRENHEIT);
-        }
 
     }
 
@@ -297,7 +311,7 @@ class THERMOSTAT {
                 self.get.STATE_OFF()
                     .then(response => {
 
-                        self.log(self.displayName + ": Switch off");
+                        self.log(self.displayName + ": OFF");
                         callback()
 
                     })
@@ -320,7 +334,7 @@ class THERMOSTAT {
                 self.get.STATE_HEAT()
                     .then(response => {
 
-                        self.log(self.displayName + ": Switch to heat mode");
+                        self.log(self.displayName + ": HEAT");
                         callback()
 
                     })
@@ -343,7 +357,7 @@ class THERMOSTAT {
                 self.get.STATE_COOL()
                     .then(response => {
 
-                        self.log(self.displayName + ": Switch to cool mode");
+                        self.log(self.displayName + ": COOL");
                         callback()
 
                     })
@@ -377,7 +391,7 @@ class THERMOSTAT {
                         self.get.STATE_AUTO()
                             .then(response => {
 
-                                self.log(self.displayName + ": Automatic mode on");
+                                self.log(self.displayName + ": AUTO");
                                 self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
                                 callback()
 
@@ -398,7 +412,7 @@ class THERMOSTAT {
 
                 } else {
 
-                    self.log(self.displayName + ": Switching to automatic mode now");
+                    self.log(self.displayName + ": AUTO");
 
                     self.get.STATE_AUTO()
                         .then(response => {
