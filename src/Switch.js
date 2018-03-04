@@ -1,7 +1,7 @@
-const moment = require('moment');
-var rp = require("request-promise");
-var pollingtoevent = require("polling-to-event");
-var HK_REQS = require('./Requests.js');
+var moment = require('moment'),
+	rp = require("request-promise"),
+	pollingtoevent = require("polling-to-event"),
+	HK_REQS = require('./Requests.js');
 
 var Accessory,
     Service,
@@ -47,8 +47,8 @@ class SWITCH {
 
         this.Switch.getCharacteristic(Characteristic.On)
             .on('get', this.getSwitch.bind(this))
-            .on('set', this.setSwitch.bind(this));
-
+            .on('set', this.setSwitch.bind(this))
+            .updateValue(false);
 
         (function poll() {
             setTimeout(function() {
@@ -67,11 +67,11 @@ class SWITCH {
 
         for (var i = 0; i < self.roomids.length; i++) {
 
-            var a;
+            var _;
 
             self.get = new HK_REQS(self.username, self.password, self.homeID, {
                 "token": process.argv[2]
-            }, self.zoneID, self.heatValue, self.coolValue, a, a, self.roomids[i]);
+            }, _, _, _, _, _, self.roomids[i]);
 
             self.get.CENTRAL_STATE()
                 .then(response => {
@@ -82,7 +82,7 @@ class SWITCH {
                 .catch(err => {
 
                     if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                        self.log("No connection...");
+                        self.log("No connection! Reconnect...");
                     } else {
                         self.log("Error: " + err);
                     }
@@ -90,7 +90,7 @@ class SWITCH {
                 });
 
         }
-
+		
         if ((new RegExp('\\b' + self.stateArray.join('\\b|\\b') + '\\b')).test("OFF")) {
             self.stateArray = []
             callback(null, true)
@@ -106,66 +106,68 @@ class SWITCH {
         var self = this;
 
         if (state) {
-            //TURN ON > TURN OFF THERMOSTATS
+	        
             var self = this;
 
             for (var i = 0; i < self.roomids.length; i++) {
 
-                var a;
+                var _;
 
                 self.get = new HK_REQS(self.username, self.password, self.homeID, {
                     "token": process.argv[2]
-                }, self.zoneID, self.heatValue, self.coolValue, a, a, self.roomids[i]);
+                }, _, _, _, _, _, self.roomids[i]);
 
                 self.get.STATE_OFF_ALL()
                     .then(response => {})
                     .catch(err => {
 
-                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                            self.log("No connection...");
-                        } else {
-                            self.log("Error: " + err);
-                        }
+	                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+	                        self.log("No connection! Reconnect...");
+	                    } else {
+	                        self.log("Error: " + err);
+	                    }
 
                     });
 
             }
 
             setTimeout(function() {
-                self.Switch.getCharacteristic(Characteristic.On).updateValue(true);
+                self.Switch.getCharacteristic(Characteristic.On)
+                	.updateValue(true);
             }, 300)
 
             self.log("Turning all Thermostats off!");
             callback()
 
         } else {
-            //TURN OFF > TURN ON THERMOSTATS (AUTO MODE)
+	        
             var self = this;
 
             for (var i = 0; i < self.roomids.length; i++) {
 
-                var a;
+                var _;
 
                 self.get = new HK_REQS(self.username, self.password, self.homeID, {
                     "token": process.argv[2]
-                }, self.zoneID, self.heatValue, self.coolValue, a, a, self.roomids[i]);
+                }, _, _, _, _, _, self.roomids[i]);
 
                 self.get.STATE_AUTO_ALL()
                     .then(response => {})
                     .catch(err => {
 
-                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                            self.log("No connection...");
-                        } else {
-                            self.log("Error: " + err);
-                        }
+	                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+	                        self.log("No connection! Reconnect...");
+	                    } else {
+	                        self.log("Error: " + err);
+	                    }
 
                     });
 
             }
 
             setTimeout(function() {
-                self.Switch.getCharacteristic(Characteristic.On).updateValue(false);
+                self.Switch.getCharacteristic(Characteristic.On)
+                	.updateValue(false);
             }, 300)
 
             self.log("Turning all Thermostats to auto mode!");
