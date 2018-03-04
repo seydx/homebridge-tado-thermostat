@@ -1,4 +1,4 @@
-# homebridge-tado-thermostat v2.2
+# homebridge-tado-thermostat v2.3
 
 [![npm](https://img.shields.io/npm/v/homebridge-tado-thermostat-plugin.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-tado-thermostat-plugin)
 [![npm](https://img.shields.io/npm/dt/homebridge-tado-thermostat-plugin.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-tado-thermostat-plugin)
