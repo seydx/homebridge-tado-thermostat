@@ -81,6 +81,7 @@ class USER {
         this.username = config.username;
         this.password = config.password;
         this.userID = config.id;
+        this.timeout = config.timeout;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/mobileDevices?password=" + this.password +
@@ -94,7 +95,8 @@ class USER {
                 done(err, data);
             });
         }, {
-            longpolling: true
+            longpolling: false,
+            interval: 3000
         });
 
     }
@@ -162,7 +164,7 @@ class USER {
         var self = this;
 
         self.emitter
-            .on("longpoll", function(data) {
+            .on("poll", function(data) {
 
                 var result = JSON.parse(data);
 
@@ -184,7 +186,6 @@ class USER {
                         } else {
                             //self.log("Bye! " + self.name);
                             self.state = 0;
-                            self.now = moment().unix();
                         }
 
                     }
@@ -211,7 +212,7 @@ class USER {
         var self = this;
 
         self.emitter
-            .on("longpoll", function(data) {
+            .on("poll", function(data) {
 
                 var result = JSON.parse(data);
 
