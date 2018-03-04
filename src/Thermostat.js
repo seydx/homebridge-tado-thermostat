@@ -71,7 +71,8 @@ class THERMOSTAT {
                 done(err, data);
             });
         }, {
-            longpolling: true
+            longpolling: false,
+            interval: 5000
         });
 
     }
@@ -142,8 +143,15 @@ class THERMOSTAT {
             path: this.api.user.cachedAccessoryPath()
         });
 
-        accessory._updateBatteryValues()
-        accessory._updateThermostatValues()
+        accessory._updateBatteryValues();
+        accessory._updateThermostatValues();
+        
+        (function poll() {
+            setTimeout(function() {
+                getHistory()
+                poll()
+            }, 5 * 60 * 1000)
+        })();
 
         return [this.informationService, this.Thermostat, this.BatteryService, this.historyService];
 
@@ -189,7 +197,7 @@ class THERMOSTAT {
         var self = this;
 
         self.emitter_state
-            .on("longpoll", function(data) {
+            .on("poll", function(data) {
 
                 var result = JSON.parse(data);
 
@@ -236,13 +244,6 @@ class THERMOSTAT {
                     }
                 }
 
-                self.historyService.addEntry({
-                    time: moment().unix(),
-                    temp: self.currenttemp,
-                    pressure: 1029,
-                    humidity: self.humidity
-                });
-
                 self.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.currenttemp);
                 self.Thermostat.getCharacteristic(Characteristic.TargetTemperature).updateValue(self.targettemp);
                 self.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(self.humidity);
@@ -259,6 +260,15 @@ class THERMOSTAT {
                 self.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).updateValue(self.targetstate);
             });
 
+    }
+    
+    getHistory(){
+        self.historyService.addEntry({
+            time: moment().unix(),
+            temp: self.currenttemp,
+            pressure: 1029,
+            humidity: self.humidity
+        });
     }
 
     getTemperatureDisplayUnits(callback) {
