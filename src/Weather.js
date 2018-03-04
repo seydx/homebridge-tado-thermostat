@@ -42,7 +42,7 @@ class WEATHER {
             });
         }, {
             longpolling: false,
-            interval: 5 * 60 * 1000
+            interval: 7 * 60 * 1000
         });
 
     }
