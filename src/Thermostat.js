@@ -71,8 +71,7 @@ class THERMOSTAT {
                 done(err, data);
             });
         }, {
-            longpolling: false,
-            interval: 5000
+            longpolling: true
         });
 
     }
@@ -190,7 +189,7 @@ class THERMOSTAT {
         var self = this;
 
         self.emitter_state
-            .on("poll", function(data) {
+            .on("longpoll", function(data) {
 
                 var result = JSON.parse(data);
 
