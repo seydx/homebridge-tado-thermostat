@@ -1,7 +1,7 @@
-const moment = require('moment');
-var rp = require("request-promise");
-var pollingtoevent = require("polling-to-event");
-var inherits = require("util").inherits;
+var moment = require('moment'),
+    rp = require("request-promise"),
+    pollingtoevent = require("polling-to-event"),
+    inherits = require("util").inherits;
 
 var Accessory,
     Service,
@@ -81,21 +81,21 @@ class USER {
         this.username = config.username;
         this.password = config.password;
         this.userID = config.id;
-        this.timeout = config.timeout;
+
+        !this.state ? this.state = 0 : this.state;
+        !this.now ? this.now = 0 : this.now;
+        !this.lasttime ? this.lasttime = 0 : this.lasttime;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/mobileDevices?password=" + this.password +
             "&username=" + this.username;
-
-        this.state = 0;
-        this.now = 0;
 
         this.emitter = pollingtoevent(function(done) {
             rp.get(platform.url, function(err, req, data) {
                 done(err, data);
             });
         }, {
-            longpolling: false,
+            longpolling: true,
             interval: 3000
         });
 
@@ -103,7 +103,7 @@ class USER {
 
     getServices() {
 
-        var accessory = this;
+        var self = this;
 
         this.informationService = new Service.AccessoryInformation()
             .setCharacteristic(Characteristic.Name, this.name)
@@ -114,15 +114,17 @@ class USER {
             .setCharacteristic(Characteristic.FirmwareRevision, require('../package.json').version);
 
         this.Motion = new Service.MotionSensor(this.name);
-
-        if (accessory.name == "Anyone") {
+        
+        if(this.name == "Anyone"){
             this.Motion.getCharacteristic(Characteristic.MotionDetected)
-                .updateValue(accessory.state)
-            accessory.getAnyoneDetected()
+            	.updateValue(this.state)
+            	
+            this.getAnyoneDetected()
         } else {
             this.Motion.getCharacteristic(Characteristic.MotionDetected)
-                .updateValue(accessory.state)
-            accessory.getMotionDetected()
+            	.updateValue(this.state)
+            	
+            this.getMotionDetected();
         }
 
         this.Motion.getCharacteristic(Characteristic.StatusActive)
@@ -140,7 +142,6 @@ class USER {
         this.Motion.getCharacteristic(EveMotionLastActivation)
             .on('get', this.getMotionLastActivation.bind(this));
 
-        //FAKEGATO
         this.historyService = new FakeGatoHistoryService("motion", this, {
             storage: 'fs',
             disableTimer: true,
@@ -149,8 +150,8 @@ class USER {
 
         (function poll() {
             setTimeout(function() {
-                accessory.Motion.getCharacteristic(EveMotionDuration).getValue();
-                accessory.Motion.getCharacteristic(EveMotionLastActivation).getValue();
+                self.Motion.getCharacteristic(EveMotionDuration).getValue();
+                self.Motion.getCharacteristic(EveMotionLastActivation).getValue();
                 poll()
             }, 2000)
         })();
@@ -163,29 +164,37 @@ class USER {
 
         var self = this;
 
+        var active = 0;
+        var inactive = 0;
+
         self.emitter
-            .on("poll", function(data) {
+            .on("longpoll", function(data) {
 
                 var result = JSON.parse(data);
 
                 for (var i = 0; i < result.length; i++) {
-
                     if (result[i].id == self.userID) {
 
                         var userStatus = false;
 
                         if (result[i].settings.geoTrackingEnabled == true) {
                             userStatus = result[i].location.atHome;
-                            //userStatus = result[i].settings.geoTrackingEnabled;
                         }
 
                         if (userStatus == true) {
-                            //self.log(self.name + " is at home!");
                             self.state = 1;
                             self.now = moment().unix();
+                            active = 1;
                         } else {
-                            //self.log("Bye! " + self.name);
                             self.state = 0;
+                            active == 1 ? inactive = 1 : inactive = 0;
+
+                            if (inactive == 1) {
+                                self.lasttime = moment().unix();
+                            }
+
+                            inactive = 0;
+
                         }
 
                     }
@@ -197,12 +206,15 @@ class USER {
                     status: self.state
                 });
 
-                self.Motion.getCharacteristic(Characteristic.MotionDetected).updateValue(self.state);
+                self.Motion.getCharacteristic(Characteristic.MotionDetected)
+                    .updateValue(self.state);
 
             })
             .on("error", function(err) {
-                console.log("%s", err);
-                self.Motion.getCharacteristic(Characteristic.MotionDetected).updateValue(0);
+                self.log("An Error occured: %s", err);
+                self.log("Setting Motion/Occupancy State to: " + self.state);
+                self.Motion.getCharacteristic(Characteristic.MotionDetected)
+                    .updateValue(self.state);
             });
 
     }
@@ -211,30 +223,39 @@ class USER {
 
         var self = this;
 
+        var active = 0;
+        var inactive = 0;
+
         self.emitter
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
 
-                var a = 0;
-                var b = 0;
+                var athome = 0; //a
+                var notathome = 0; //b
 
                 for (var i = 0; i < result.length; i++) {
                     if (result[i].settings.geoTrackingEnabled == true) {
-                        result[i].location.atHome == true ? a = 1 : b = 0
+                        result[i].location.atHome == true ? athome = 1 : notathome = 0
                     }
                 }
 
-                var c = a + b;
+                var count = athome + notathome;
 
-                if (c > 0) {
+                if (count > 0) {
                     self.state = 1
                     self.now = moment().unix();
-                    //self.log("Anyone at home");
+                    athome = 1;
                 } else {
                     self.state = 0
-                    self.now = moment().unix();
-                    //self.log("No one at home");
+
+                    active == 1 ? inactive = 1 : inactive = 0;
+
+                    if (inactive == 1) {
+                        self.lasttime = moment().unix();
+                    }
+
+                    inactive = 0;
                 }
 
                 self.historyService.addEntry({
@@ -242,12 +263,15 @@ class USER {
                     status: self.state
                 });
 
-                self.Motion.getCharacteristic(Characteristic.MotionDetected).updateValue(self.state);
+                self.Motion.getCharacteristic(Characteristic.MotionDetected)
+                    .updateValue(self.state);
 
             })
             .on("error", function(err) {
-                console.log("%s", err);
-                self.Motion.getCharacteristic(Characteristic.MotionDetected).updateValue(0);
+                self.log("An Error occured: %s", err);
+                self.log("Setting Motion/Occupancy State to: " + self.state);
+                self.Motion.getCharacteristic(Characteristic.MotionDetected)
+                    .updateValue(self.state);
             });
 
     }
@@ -256,16 +280,14 @@ class USER {
 
         var self = this;
 
-        if (self.Motion.getCharacteristic(Characteristic.MotionDetected).value == true) {
+        if (self.state == true) {
 
             var last = moment().unix();
-
             callback(null, last)
 
         } else {
 
-            var last = self.now - self.historyService.getInitialTime();
-
+            var last = self.lasttime - self.historyService.getInitialTime();
             callback(null, last)
         }
 
