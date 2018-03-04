@@ -101,7 +101,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | windowDetection | No | Exposes window sensors for each room (only if open weather detection is enabled in tado! - Default: false) |
 
 
-## Coming soon features
+## W.I.P features
 
 - [x] Fakegato
 - [x] Weather Sensor
