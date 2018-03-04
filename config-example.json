@@ -14,9 +14,10 @@
         "heatValue": 5,
         "coolValue": 5,
         "delayTimer": 0,
-        "weatherEnabled":true,
-        "weatherServiceEnabled":true,
-        "occupancyEnabled":true
+        "weatherEnabled":false,
+        "weatherServiceEnabled":false,
+        "occupancyEnabled":false,
+        "windowDetection":false,
    }
  ]
 }
