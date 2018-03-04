@@ -30,6 +30,11 @@ This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sens
 **Window sensors:**
 - If enabled in config.json **AND** under the setting in the tado app (open window detection), this plugin creates windows sensors for each room.
 
+**Central Switch:**
+- If enabled in config.json this plugin creates a central switch to turning off/on all thermostats together with just one click!
+- Turning on the switch means, turning off ALL Thermostats
+- Turnun off the switch means, turning ALL Thermostats into automatic mode!
+
 See [Images](https://github.com/SeydX/homebridge-tado-thermostat/tree/master/images/) for more details.
 
 
