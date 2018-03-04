@@ -6,6 +6,7 @@ var Tado_Thermostat = require('./src/Thermostat.js');
 var Tado_Weather = require('./src/Weather.js');
 var Tado_WeatherService = require('./src/WeatherService.js');
 var Tado_Occupancy = require('./src/Occupancy.js');
+var Tado_Windows = require('./src/Window.js');
 
 var Accessory, Service, Characteristic;
 
@@ -43,6 +44,9 @@ function TadoThermostatPlatform(log, config, api) {
     //Occupancy Config
     this.occupancyEnabled = config["occupancyEnabled"] || false;
 
+    //Open Window Detection Config
+    this.windowDetection = config["windowDetection"] || false;
+
 }
 
 TadoThermostatPlatform.prototype = {
@@ -79,7 +83,7 @@ TadoThermostatPlatform.prototype = {
                                     fetchHomeID(next)
                                 }, 10000)
                             } else {
-                                self.log("Fetching Home ID failed - Trying again..." + err);
+                                self.log("HomeID Error: " + err);
                                 setTimeout(function() {
                                     fetchHomeID(next)
                                 }, 10000)
@@ -127,7 +131,7 @@ TadoThermostatPlatform.prototype = {
                                     fetchTemperatureUnit(next)
                                 }, 10000)
                             } else {
-                                self.log("Fetching Temperature Unit failed - Trying again..." + err);
+                                self.log("Temperature Unit Error: " + err);
                                 setTimeout(function() {
                                     fetchTemperatureUnit(next)
                                 }, 10000)
@@ -200,7 +204,7 @@ TadoThermostatPlatform.prototype = {
                                     fetchZones(next)
                                 }, 10000)
                             } else {
-                                self.log(err);
+                                self.log("Zone Error: " + err);
                                 setTimeout(function() {
                                     fetchZones(next)
                                 }, 10000)
@@ -289,7 +293,7 @@ TadoThermostatPlatform.prototype = {
                                     fetchOccupancy(next)
                                 }, 10000)
                             } else {
-                                self.log(err);
+                                self.log("Occupancy Error: " + err);
                                 setTimeout(function() {
                                     fetchOccupancy(next)
                                 }, 10000)
@@ -323,6 +327,92 @@ TadoThermostatPlatform.prototype = {
                 }
             },
 
+            // set Window Sensors
+            function(next) {
+
+                function fetchWindows(next) {
+
+                    self.get = new HK_REQS(self.username, self.password, self.homeID, {
+                        "token": process.argv[2]
+                    });
+
+                    self.get.HOME_ZONES()
+                        .then(response => {
+
+                            var windows = response;
+                            var windowArray = []
+
+                            for (var i = 0; i < windows.length; i++) {
+                                if (windows[i].openWindowDetection.supported == true) {
+
+                                    if (windows[i].openWindowDetection.enabled == true) {
+
+                                        toConfig = {
+                                            name: windows[i].name + " Window",
+                                            homeID: self.homeID,
+                                            zoneID: windows[i].id,
+                                            username: self.username,
+                                            password: self.password,
+                                            timeout: windows[i].openWindowDetection.timeoutInSeconds
+                                        }
+
+                                        self.log("Found new window: " + toConfig.name)
+                                        windowArray.push(toConfig);
+
+                                    } else {
+
+                                        self.log(windows[i].name + ": Please activate Open weather detection in your Tado app!")
+
+                                    }
+
+                                }
+                            }
+
+                            next(null, windowArray)
+
+                        })
+                        .catch(err => {
+
+                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                                self.log("Window Detection: No connection - Trying to reconnect...");
+                                setTimeout(function() {
+                                    fetchOccupancy(next)
+                                }, 10000)
+                            } else {
+                                self.log("Detection Error: " + err);
+                                setTimeout(function() {
+                                    fetchWindows(next)
+                                }, 10000)
+                            }
+
+                        });
+                }
+                fetchWindows(next)
+            },
+
+            // Create Accessories  
+            function(windowArray, next) {
+                if (self.windowDetection) {
+                    async.forEachOf(windowArray, function(zone, key, step) {
+
+                        function pushMyAccessories(step) {
+
+                            var tadoAccessory = new Tado_Windows(self.log, zone, self.api)
+                            accessoriesArray.push(tadoAccessory);
+                            step()
+
+                        }
+                        pushMyAccessories(step)
+
+                    }, function(err) {
+                        if (err) next(err)
+                        else next()
+                    })
+                } else {
+                    next()
+                }
+            },
+
             // set Weather
             function(next) {
                 if (self.weatherEnabled) {
@@ -331,7 +421,7 @@ TadoThermostatPlatform.prototype = {
                         homeID: self.homeID,
                         username: self.username,
                         password: self.password,
-                        tempUnit: self.tempUnit,
+                        tempUnit: self.tempUnit
                     }
                     var weatherAccessory = new Tado_Weather(self.log, weatherConfig, self.api)
                     accessoriesArray.push(weatherAccessory);
