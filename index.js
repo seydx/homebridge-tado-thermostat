@@ -1,15 +1,17 @@
 var rp = require("request-promise"),
     async = require("async");
 
-var HK_REQS = require('./src/Requests.js');
-var Tado_Thermostat = require('./src/Thermostat.js');
-var Tado_Weather = require('./src/Weather.js');
-var Tado_WeatherService = require('./src/WeatherService.js');
-var Tado_Occupancy = require('./src/Occupancy.js');
-var Tado_Windows = require('./src/Window.js');
-var Tado_Switch = require('./src/Switch.js');
+var HK_REQS = require('./src/Requests.js'),
+    Tado_Thermostat = require('./src/Thermostat.js'),
+    Tado_Weather = require('./src/Weather.js'),
+    Tado_WeatherService = require('./src/WeatherService.js'),
+    Tado_Occupancy = require('./src/Occupancy.js'),
+    Tado_Windows = require('./src/Window.js'),
+    Tado_Switch = require('./src/Switch.js');
 
-var Accessory, Service, Characteristic;
+var Accessory,
+    Service,
+    Characteristic;
 
 module.exports = function(homebridge) {
 
@@ -31,7 +33,9 @@ function TadoThermostatPlatform(log, config, api) {
     //Base Config
     this.name = config["name"] || "Tado";
     this.username = config["username"];
+    if (!config.username) throw new Error("Username is required!");
     this.password = config["password"];
+    if (!config.password) throw new Error("Password is required!");
 
     //Thermostat Config
     this.coolValue = config["coolValue"] || 4;
@@ -56,7 +60,6 @@ TadoThermostatPlatform.prototype = {
 
         async.waterfall([
 
-            // Get HomeID
             function(next) {
                 function fetchHomeID(next) {
 
@@ -94,8 +97,6 @@ TadoThermostatPlatform.prototype = {
                 fetchHomeID(next)
             },
 
-
-            // get temperatureUnit
             function(next) {
                 function fetchTemperatureUnit(next) {
 
@@ -142,7 +143,6 @@ TadoThermostatPlatform.prototype = {
                 fetchTemperatureUnit(next)
             },
 
-            // get Zones
             function(next) {
                 function fetchZones(next) {
 
@@ -217,7 +217,6 @@ TadoThermostatPlatform.prototype = {
                 fetchZones(next)
             },
 
-            // Create Accessories  
             function(zonesArray, next) {
 
                 async.forEachOf(zonesArray, function(zone, key, step) {
@@ -238,7 +237,6 @@ TadoThermostatPlatform.prototype = {
 
             },
 
-            // set Occupancy
             function(next) {
 
                 function fetchOccupancy(next) {
@@ -305,7 +303,6 @@ TadoThermostatPlatform.prototype = {
                 fetchOccupancy(next)
             },
 
-            // Create Accessories  
             function(occupancyArray, next) {
                 if (self.occupancyEnabled) {
                     async.forEachOf(occupancyArray, function(zone, key, step) {
@@ -328,7 +325,6 @@ TadoThermostatPlatform.prototype = {
                 }
             },
 
-            // set Window Sensors
             function(next) {
 
                 function fetchWindows(next) {
@@ -391,7 +387,6 @@ TadoThermostatPlatform.prototype = {
                 fetchWindows(next)
             },
 
-            // Create Accessories  
             function(windowArray, next) {
                 if (self.windowDetection) {
                     async.forEachOf(windowArray, function(zone, key, step) {
@@ -414,7 +409,6 @@ TadoThermostatPlatform.prototype = {
                 }
             },
 
-            // set Weather
             function(next) {
                 if (self.weatherEnabled) {
                     var weatherConfig = {
@@ -430,7 +424,6 @@ TadoThermostatPlatform.prototype = {
                 next();
             },
 
-            // set WeatherService
             function(next) {
                 if (self.weatherServiceEnabled) {
                     var weatherServiceConfig = {
@@ -445,7 +438,6 @@ TadoThermostatPlatform.prototype = {
                 next();
             },
 
-            // set Switch
             function(next) {
                 if (self.centralSwitch) {
 
