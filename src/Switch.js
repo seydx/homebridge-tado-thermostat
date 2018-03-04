@@ -1,13 +1,14 @@
 const moment = require('moment');
 var rp = require("request-promise");
 var pollingtoevent = require("polling-to-event");
+var HK_REQS = require('./Requests.js');
 
-var Accessory, 
-	Service, 
-	Characteristic, 
-	FakeGatoHistoryService;
-	
-class WINDOW {
+var Accessory,
+    Service,
+    Characteristic,
+    FakeGatoHistoryService;
+
+class SWITCH {
 
     constructor(log, config, api) {
 
@@ -27,22 +28,8 @@ class WINDOW {
         this.zoneID = config.zoneID;
         this.username = config.username;
         this.password = config.password;
-        this.timeout = config.timeout;
-
-        this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
-            "/zones/" + this.zoneID + "/state?password=" + this.password +
-            "&username=" + this.username;
-
-        this.state = 0;
-
-        this.emitter = pollingtoevent(function(done) {
-            rp.get(platform.url, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 5000
-        });
+        this.roomids = JSON.parse(config.roomids);
+        this.stateArray = [];
 
     }
 
@@ -54,46 +41,142 @@ class WINDOW {
             .setCharacteristic(Characteristic.Name, this.name)
             .setCharacteristic(Characteristic.Identify, this.name)
             .setCharacteristic(Characteristic.Manufacturer, 'Tado GmbH')
-            .setCharacteristic(Characteristic.Model, 'Window')
-            .setCharacteristic(Characteristic.SerialNumber, "OWD-" + this.homeID + "-" + this.zoneID)
+            .setCharacteristic(Characteristic.Model, 'Central Switch')
+            .setCharacteristic(Characteristic.SerialNumber, "CS-" + this.homeID + "-99")
             .setCharacteristic(Characteristic.FirmwareRevision, require('../package.json').version);
 
-        this.Window = new Service.ContactSensor(this.name);
+        this.Switch = new Service.Switch(this.name);
 
-        this.Window.getCharacteristic(Characteristic.ContactSensorState)
-            .updateValue(accessory.state)
+        this.Switch.getCharacteristic(Characteristic.On)
+            .on('get', this.getSwitch.bind(this))
+            .on('set', this.setSwitch.bind(this));
 
-        accessory.getCurrentState()
 
-        return [this.informationService, this.Window];
+        (function poll() {
+            setTimeout(function() {
+                accessory.Switch.getCharacteristic(Characteristic.On).getValue();
+                poll()
+            }, 5000)
+        })();
+
+        return [this.informationService, this.Switch];
 
     }
 
-    getCurrentState() {
+    getSwitch(callback) {
 
         var self = this;
 
-        self.emitter
-            .on("poll", function(data) {
+        for (var i = 0; i < self.roomids.length; i++) {
 
-                var result = JSON.parse(data);
-                
-                if(result.openWindow != null){
-	                self.state = 1;
-                } else {
-	                self.state = 0;
-                }
-                
-                self.Window.getCharacteristic(Characteristic.ContactSensorState).updateValue(self.state);
+            var a;
 
-            })
-            .on("error", function(err) {
-                console.log("%s", err);
-                self.Window.getCharacteristic(Characteristic.ContactSensorState).updateValue(self.state);
-            });
+            self.get = new HK_REQS(self.username, self.password, self.homeID, {
+                "token": process.argv[2]
+            }, self.zoneID, self.heatValue, self.coolValue, a, a, self.roomids[i]);
+
+            self.get.CENTRAL_STATE()
+                .then(response => {
+
+                    self.stateArray.push(response.setting.power);
+
+                })
+                .catch(err => {
+
+                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                        self.log("No connection...");
+                    } else {
+                        self.log("Error: " + err);
+                    }
+
+                });
+
+        }
+
+        if ((new RegExp('\\b' + self.stateArray.join('\\b|\\b') + '\\b')).test("OFF")) {
+            self.stateArray = []
+            callback(null, true)
+        } else {
+            self.stateArray = []
+            callback(null, false)
+        }
+
+    }
+
+    setSwitch(state, callback) {
+
+        var self = this;
+
+        if (state) {
+            //TURN ON > TURN OFF THERMOSTATS
+            var self = this;
+
+            for (var i = 0; i < self.roomids.length; i++) {
+
+                var a;
+
+                self.get = new HK_REQS(self.username, self.password, self.homeID, {
+                    "token": process.argv[2]
+                }, self.zoneID, self.heatValue, self.coolValue, a, a, self.roomids[i]);
+
+                self.get.STATE_OFF_ALL()
+                    .then(response => {})
+                    .catch(err => {
+
+                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                            self.log("No connection...");
+                        } else {
+                            self.log("Error: " + err);
+                        }
+
+                    });
+
+            }
+
+            setTimeout(function() {
+                self.Switch.getCharacteristic(Characteristic.On).updateValue(true);
+            }, 300)
+
+            self.log("Turning all Thermostats off!");
+            callback()
+
+        } else {
+            //TURN OFF > TURN ON THERMOSTATS (AUTO MODE)
+            var self = this;
+
+            for (var i = 0; i < self.roomids.length; i++) {
+
+                var a;
+
+                self.get = new HK_REQS(self.username, self.password, self.homeID, {
+                    "token": process.argv[2]
+                }, self.zoneID, self.heatValue, self.coolValue, a, a, self.roomids[i]);
+
+                self.get.STATE_AUTO_ALL()
+                    .then(response => {})
+                    .catch(err => {
+
+                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                            self.log("No connection...");
+                        } else {
+                            self.log("Error: " + err);
+                        }
+
+                    });
+
+            }
+
+            setTimeout(function() {
+                self.Switch.getCharacteristic(Characteristic.On).updateValue(false);
+            }, 300)
+
+            self.log("Turning all Thermostats to auto mode!");
+            callback()
+
+        }
 
     }
 
 }
 
-module.exports = WINDOW
+module.exports = SWITCH
