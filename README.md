@@ -95,10 +95,10 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to **Current Room Temperature + 4 degrees** (Default: 4) |
 | coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to **Current Room Temperature - 4 degrees** (Default: 4) |
 | delaytimer | No | Delay for setting the thermostat back in automatic mode (Default: 0 == not enabled) |
-| weatherEnabled | No | Enable Outside Temperature sensor (Default: false) |
-| weatherServiceEnabled | No | Enable Service to check for weather state, eg. cloudy, sunny, clear etc. NOT compatible with the Apple Home app! (Default: false) |
-| occupancyEnabled | No | Enable Occupancy sensor for registred Tado users (Default: false) |
-| weatherDetection | No | Enable Occupancy sensor for registred Tado users (Default: false) |
+| weatherEnabled | No | Exposes temperature sensors for your location based on tado (Default: false) | |
+| weatherServiceEnabled | No | Enable Service to check for weather state, eg. cloudy, sunny, clear etc. Only with Elgato EVE app! (Default: false) |
+| occupancyEnabled | No | Exposes occupancy/motion sensors for all registred persons (only if geotracking is enabled in tado! - Default: false) | |
+| windowDetection | No | Exposes window sensors for each room (only if open weather detection is enabled in tado! - Default: false) |
 
 
 ## Coming soon features
