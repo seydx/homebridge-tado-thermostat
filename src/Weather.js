@@ -2,11 +2,11 @@ const moment = require('moment');
 var rp = require("request-promise");
 var pollingtoevent = require("polling-to-event");
 
-var Accessory, 
-	Service, 
-	Characteristic, 
-	FakeGatoHistoryService;
-	
+var Accessory,
+    Service,
+    Characteristic,
+    FakeGatoHistoryService;
+
 class WEATHER {
 
     constructor(log, config, api) {
@@ -28,6 +28,7 @@ class WEATHER {
         this.username = config.username;
         this.password = config.password;
         this.tempUnit = config.tempUnit;
+        this.timeout = config.timeout;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/weather?password=" + this.password +
@@ -40,7 +41,8 @@ class WEATHER {
                 done(err, data);
             });
         }, {
-            longpolling: true
+            longpolling: false,
+            interval: 5 * 60 * 1000
         });
 
     }
@@ -85,7 +87,7 @@ class WEATHER {
         var self = this;
 
         self.emitter
-            .on("longpoll", function(data) {
+            .on("poll", function(data) {
 
                 var result = JSON.parse(data);
 
@@ -95,7 +97,7 @@ class WEATHER {
                     //self.log("Outside temperature: " + self.temp + " degrees");
 
                 } else {
-	                
+
                     self.temp = result.outsideTemperature.fahrenheit;
                     //self.log("Outside temperature: " + self.temp + " fahrenheit");
 
@@ -107,7 +109,7 @@ class WEATHER {
                     pressure: 0,
                     humidity: 0
                 });
-                
+
                 self.Weather.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.temp);
 
             })
