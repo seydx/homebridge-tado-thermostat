@@ -1,6 +1,6 @@
-const moment = require('moment');
-var rp = require("request-promise");
-var pollingtoevent = require("polling-to-event");
+var moment = require('moment'),
+    rp = require("request-promise"),
+    pollingtoevent = require("polling-to-event");
 
 var Accessory,
     Service,
@@ -29,11 +29,11 @@ class WINDOW {
         this.password = config.password;
         this.timeout = config.timeout;
 
+        !this.state ? this.state = 0 : this.state;
+
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/zones/" + this.zoneID + "/state?password=" + this.password +
             "&username=" + this.username;
-
-        this.state = 0;
 
         this.emitter = pollingtoevent(function(done) {
             rp.get(platform.url, function(err, req, data) {
@@ -48,8 +48,6 @@ class WINDOW {
 
     getServices() {
 
-        var accessory = this;
-
         this.informationService = new Service.AccessoryInformation()
             .setCharacteristic(Characteristic.Name, this.name)
             .setCharacteristic(Characteristic.Identify, this.name)
@@ -61,9 +59,9 @@ class WINDOW {
         this.Window = new Service.ContactSensor(this.name);
 
         this.Window.getCharacteristic(Characteristic.ContactSensorState)
-            .updateValue(accessory.state)
+            .updateValue(this.state)
 
-        accessory.getCurrentState()
+        this.getCurrentState()
 
         return [this.informationService, this.Window];
 
@@ -78,18 +76,17 @@ class WINDOW {
 
                 var result = JSON.parse(data);
 
-                if (result.openWindow != null) {
-                    self.state = 1;
-                } else {
-                    self.state = 0;
-                }
+                result.openWindow != null ? self.state = 1 : self.state = 0;
 
-                self.Window.getCharacteristic(Characteristic.ContactSensorState).updateValue(self.state);
+                self.Window.getCharacteristic(Characteristic.ContactSensorState)
+                    .updateValue(self.state);
 
             })
             .on("error", function(err) {
-                console.log("%s", err);
-                self.Window.getCharacteristic(Characteristic.ContactSensorState).updateValue(self.state);
+                self.log("An Error occured: %s", err);
+                self.log("Setting Windows State to: " + self.state);
+                self.Window.getCharacteristic(Characteristic.ContactSensorState)
+                    .updateValue(self.state);
             });
 
     }
