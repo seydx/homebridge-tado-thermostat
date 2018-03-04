@@ -1,28 +1,34 @@
-# Homebridge Plugin for Tado Smart Thermostats
+# homebridge-tado-thermostat v2.2
 
-A platform that expose all Tado Smart Thermostats to HomeKit via [Homebridge](https://github.com/nfarina/homebridge) with additional modes like Heat, Cool, Off, Automatic mode and integrated battery information. Also able to expose weather temperature sensor or occupancy sensors with FakeGato ability.
+[![npm](https://img.shields.io/npm/v/homebridge-tado-thermostat-plugin.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-tado-thermostat-plugin)
+[![npm](https://img.shields.io/npm/dt/homebridge-tado-thermostat-plugin.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-tado-thermostat-plugin)
+[![GitHub last commit](https://img.shields.io/github/last-commit/SeydX/homebridge-tado-thermostat.svg?style=flat-square)](https://github.com/SeydX/homebridge-tado-thermostat)
 
-## Why do we need this plugin?
+# Homebridge plugin for Tado Smart Thermostats
 
-Because, native Tado expose only thermostats with the possiblity to adjust the temperature value for heating and the power mode (On/Off).
+This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sensors and contact (window) sensors to Apple's HomeKit. It provides following features:
 
-With this plugin, you can set several modes, like:
+**Thermostats:**
+- Additional modes: Heat, Cool, Auto and Off
+- Secure temperature setting (temperature setting only possible in heat or cool mode)
+- Auto heat/cool to a certain value (configurable in config.json)
+- Battery state and notification if battery is low
+- Built-in humidity sensor
+- Delay timer: You can set up a timer as delay for your thermostats to wait a certain time to go back to the automatic mode (Helpful in automations where you shut off the thermostat after window is opened and in automatic mode if window is closed. So this timer let the thermostat wait a certain time in off mode before going back to auto mode. Helpful if you open the window only for a few minutes)
+- Elgato EVE history feature (Fakegato)
 
- - Heat
- - Cool
- - OFF
- - Automatic
- 
- and adjust also the "cool" and "heat" temperature. 
- 
- 
-With the states "Heat" and "Cool" you can heat up or cool down to a certain temperature, which is set in the configuration (coolValue, heatValue)
+**Occupancy sensors:**
+- If enabled in config.json **AND** under the settings in the tado app (geotracking) this plugin will create occupancy/motion sensors for all registred persons (configurable in the tado app).
+- In addition to this, it will create an "Anyone" sensor too, to create automations based on "Anyone at home / not at home"
+- Elgato EVE history feature (Fakegato)
 
-With the "Automatic" state you remove the "manual" control of the thermostat and setting it back to the automatic mode
+**Weather sensors:**
+- If enabled in config.json, this plugin will create a weather sensor for your location based on tado.
+- Weather Service: If enabled in config.json, this plugin creates a Service to expose the current weather state (Sunny, Cloudy, Rainy etc.) to **Elgato EVE** app
+- Elgato EVE history feature (Fakegato)
 
-The thermostats will also show the current battery state.
-
-It can also expose weather temperature sensor, weather service to detect if weather is i.e. clear or cloudy etc. (tested with EVE app) and occupancy sensors.
+**Window sensors:**
+- If enabled in config.json **AND** under the setting in the tado app (open window detection), this plugin creates windows sensors for each room.
 
 See [Images](https://github.com/SeydX/homebridge-tado-thermostat/tree/master/images/) for more details.
 
@@ -69,8 +75,9 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "coolValue": 5,
     "delayTimer": 0,
     "weatherEnabled": true,
-    "weatherServiceEnabled": true,
-    "occupancyEnabled": true
+    "weatherServiceEnabled": false,
+    "occupancyEnabled": false,
+    "windowDetection": false
     }
   ]
 }
@@ -83,27 +90,25 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | Attributes | Required | Usage |
 |------------|----------|-------|
 | name | no | Name for the Thermostat. Will be used as part of the accessory name.  |
-| username | Yes | Tado Login Username |
-| password | Yes | Tado Login Password |
+| username | **Yes** | Tado Login Username |
+| password | **Yes** | Tado Login Password |
 | heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to **Current Room Temperature + 4 degrees** (Default: 4) |
 | coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to **Current Room Temperature - 4 degrees** (Default: 4) |
 | delaytimer | No | Delay for setting the thermostat back in automatic mode (Default: 0 == not enabled) |
 | weatherEnabled | No | Enable Outside Temperature sensor (Default: false) |
 | weatherServiceEnabled | No | Enable Service to check for weather state, eg. cloudy, sunny, clear etc. NOT compatible with the Apple Home app! (Default: false) |
 | occupancyEnabled | No | Enable Occupancy sensor for registred Tado users (Default: false) |
+| weatherDetection | No | Enable Occupancy sensor for registred Tado users (Default: false) |
 
 
-## Known issues | TODO
+## Coming soon features
 
-- [x] Rewrite
-- [x] Better Error handling
 - [x] Fakegato
 - [x] Weather Sensor
 - [x] Occupancy Sensor
 - [x] Weather State Service
-- [x] long polling
-- [x] Issue: Motion sensor last activity bug
-- [ ] Better error handling
+- [ ] Central switch to put all thermostats in off mode
+- [ ] Hot Water
 - [ ] Dynamic Platform
 
 
@@ -122,28 +127,3 @@ Pull requests are accepted.
 ## Credits
 
 This plugin was initially forked from and inspired by [homebridge-tado-ac](https://github.com/nitaybz/homebridge-tado-ac) by @nitaybz
-
-Thanks to @grover for this beatiful ReadMe template
-
-
-## MIT License
-
-Copyright (c) 2017 SeydX
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
