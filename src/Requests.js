@@ -2,7 +2,7 @@ var rp = require("request-promise");
 
 class TADO_REQ {
 
-    constructor(username, password, homeID, params, zoneID, heatValue, coolValue, currenttemp, value) {
+    constructor(username, password, homeID, params, zoneID, heatValue, coolValue, currenttemp, value, roomID) {
         this.username = username;
         this.password = password;
         this.homeID = homeID;
@@ -14,6 +14,7 @@ class TADO_REQ {
         this.newHeat = currenttemp + heatValue;
         this.newCool = currenttemp - coolValue;
         this.newTemp = value;
+        this.roomID = roomID;
 
     }
 
@@ -191,6 +192,35 @@ class TADO_REQ {
 
     }
 
+    CENTRAL_STATE() {
+
+        var self = this;
+
+        this.tado = {
+
+            token: null,
+
+            get: function() {
+
+                return rp({
+
+                    "method": "GET",
+                    "uri": "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomID + "/state",
+                    "qs": {
+                        "password": self.password,
+                        "username": self.username
+                    },
+                    "json": true
+
+                });
+            }
+        }
+
+        self.tado.token = self.params.token;
+        return self.tado.get();
+
+    }
+
     WEATHER() {
 
         var self = this;
@@ -234,6 +264,44 @@ class TADO_REQ {
 
                     "method": "PUT",
                     "uri": "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay",
+                    "qs": {
+                        "password": self.password,
+                        "username": self.username
+                    },
+                    "body": {
+                        "setting": {
+                            "type": "HEATING",
+                            "power": "OFF"
+                        },
+                        "termination": {
+                            "type": "MANUAL"
+                        }
+                    },
+                    "json": true
+
+                });
+            }
+        }
+
+        self.tado.token = self.params.token;
+        return self.tado.get();
+
+    }
+
+    STATE_OFF_ALL() {
+
+        var self = this;
+
+        this.tado = {
+
+            token: null,
+
+            get: function() {
+
+                return rp({
+
+                    "method": "PUT",
+                    "uri": "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomID + "/overlay",
                     "qs": {
                         "password": self.password,
                         "username": self.username
@@ -354,6 +422,35 @@ class TADO_REQ {
 
                     "method": "DELETE",
                     "uri": "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay",
+                    "qs": {
+                        "password": self.password,
+                        "username": self.username
+                    },
+                    "json": true
+
+                });
+            }
+        }
+
+        self.tado.token = self.params.token;
+        return self.tado.get();
+
+    }
+
+    STATE_AUTO_ALL() {
+
+        var self = this;
+
+        this.tado = {
+
+            token: null,
+
+            get: function() {
+
+                return rp({
+
+                    "method": "DELETE",
+                    "uri": "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomID + "/overlay",
                     "qs": {
                         "password": self.password,
                         "username": self.username
