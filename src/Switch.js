@@ -12,8 +12,6 @@ class SWITCH {
 
     constructor(log, config, api) {
 
-        FakeGatoHistoryService = require('fakegato-history')(api);
-
         Accessory = api.platformAccessory;
         Service = api.hap.Service;
         Characteristic = api.hap.Characteristic;
