@@ -40,6 +40,7 @@ class WEATHERSERVICE {
         this.homeID = config.homeID;
         this.username = config.username;
         this.password = config.password;
+        this.timeout = config.timeout;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/weather?password=" + this.password +
@@ -52,7 +53,8 @@ class WEATHERSERVICE {
                 done(err, data);
             });
         }, {
-            longpolling: true
+            longpolling: false,
+            interval: 60 * 60 * 1000
         });
 
     }
@@ -86,7 +88,7 @@ class WEATHERSERVICE {
         var self = this;
 
         self.emitter
-            .on("longpoll", function(data) {
+            .on("poll", function(data) {
 
                 var result = JSON.parse(data);
                 self.weather = result.weatherState.value;
