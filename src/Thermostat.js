@@ -229,7 +229,7 @@ class THERMOSTAT {
 
                     } else {
 
-                        if (Math.round(result.sensorDataPoints.insideTemperature.celsius) >= Math.round(result.setting.temperature.celsius)) {
+                        if (Math.round(self.currenttemp) >= Math.round(self.targettemp)) {
                             self.currentstate = 2;
                             self.targetstate = 2;
 
