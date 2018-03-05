@@ -1,7 +1,7 @@
 var moment = require('moment'),
-	rp = require("request-promise"),
-	pollingtoevent = require("polling-to-event"),
-	HK_REQS = require('./Requests.js');
+    rp = require("request-promise"),
+    pollingtoevent = require("polling-to-event"),
+    HK_REQS = require('./Requests.js');
 
 var Accessory,
     Service,
@@ -28,6 +28,7 @@ class SWITCH {
         this.password = config.password;
         this.roomids = JSON.parse(config.roomids);
         this.stateArray = [];
+        this.offstate = 0;
 
     }
 
@@ -47,8 +48,7 @@ class SWITCH {
 
         this.Switch.getCharacteristic(Characteristic.On)
             .on('get', this.getSwitch.bind(this))
-            .on('set', this.setSwitch.bind(this))
-            .updateValue(false);
+            .on('set', this.setSwitch.bind(this));
 
         (function poll() {
             setTimeout(function() {
@@ -76,7 +76,9 @@ class SWITCH {
             self.get.CENTRAL_STATE()
                 .then(response => {
 
-                    self.stateArray.push(response.setting.power);
+                    if (response.setting.power == "OFF") {
+                        self.offstate = 1;
+                    }
 
                 })
                 .catch(err => {
@@ -90,14 +92,15 @@ class SWITCH {
                 });
 
         }
-		
-        if ((new RegExp('\\b' + self.stateArray.join('\\b|\\b') + '\\b')).test("OFF")) {
+
+        if (self.offstate > 0) {
             self.stateArray = []
             callback(null, true)
         } else {
             self.stateArray = []
             callback(null, false)
         }
+
 
     }
 
@@ -106,7 +109,7 @@ class SWITCH {
         var self = this;
 
         if (state) {
-	        
+
             var self = this;
 
             for (var i = 0; i < self.roomids.length; i++) {
@@ -121,26 +124,22 @@ class SWITCH {
                     .then(response => {})
                     .catch(err => {
 
-	                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-	                        self.log("No connection! Reconnect...");
-	                    } else {
-	                        self.log("Error: " + err);
-	                    }
+                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                            self.log("No connection! Reconnect...");
+                        } else {
+                            self.log("Error: " + err);
+                        }
 
                     });
 
             }
 
-            setTimeout(function() {
-                self.Switch.getCharacteristic(Characteristic.On)
-                	.updateValue(true);
-            }, 300)
-
+            self.offstate = 1;
             self.log("Turning all Thermostats off!");
-            callback()
+            callback(null, true)
 
         } else {
-	        
+
             var self = this;
 
             for (var i = 0; i < self.roomids.length; i++) {
@@ -155,23 +154,19 @@ class SWITCH {
                     .then(response => {})
                     .catch(err => {
 
-	                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-	                        self.log("No connection! Reconnect...");
-	                    } else {
-	                        self.log("Error: " + err);
-	                    }
+                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
+                            self.log("No connection! Reconnect...");
+                        } else {
+                            self.log("Error: " + err);
+                        }
 
                     });
 
             }
 
-            setTimeout(function() {
-                self.Switch.getCharacteristic(Characteristic.On)
-                	.updateValue(false);
-            }, 300)
-
+            self.offstate = 0;
             self.log("Turning all Thermostats to auto mode!");
-            callback()
+            callback(null, false)
 
         }
 
