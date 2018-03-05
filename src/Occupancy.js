@@ -95,7 +95,7 @@ class USER {
                 done(err, data);
             });
         }, {
-            longpolling: true,
+            longpolling: false,
             interval: 3000
         });
 
@@ -114,16 +114,16 @@ class USER {
             .setCharacteristic(Characteristic.FirmwareRevision, require('../package.json').version);
 
         this.Motion = new Service.MotionSensor(this.name);
-        
-        if(this.name == "Anyone"){
+
+        if (this.name == "Anyone") {
             this.Motion.getCharacteristic(Characteristic.MotionDetected)
-            	.updateValue(this.state)
-            	
+                .updateValue(this.state)
+
             this.getAnyoneDetected()
         } else {
             this.Motion.getCharacteristic(Characteristic.MotionDetected)
-            	.updateValue(this.state)
-            	
+                .updateValue(this.state)
+
             this.getMotionDetected();
         }
 
@@ -168,7 +168,7 @@ class USER {
         var inactive = 0;
 
         self.emitter
-            .on("longpoll", function(data) {
+            .on("poll", function(data) {
 
                 var result = JSON.parse(data);
 
@@ -176,12 +176,14 @@ class USER {
                     if (result[i].id == self.userID) {
 
                         var userStatus = false;
+                        var distance = 1;
 
                         if (result[i].settings.geoTrackingEnabled == true) {
                             userStatus = result[i].location.atHome;
+                            distance = result[i].location.relativeDistanceFromHomeFence;
                         }
 
-                        if (userStatus == true) {
+                        if (userStatus == true || distance < 0.3) {
                             self.state = 1;
                             self.now = moment().unix();
                             active = 1;
@@ -193,6 +195,7 @@ class USER {
                                 self.lasttime = moment().unix();
                             }
 
+                            active = 0;
                             inactive = 0;
 
                         }
@@ -255,6 +258,7 @@ class USER {
                         self.lasttime = moment().unix();
                     }
 
+                    active = 0;
                     inactive = 0;
                 }
 
