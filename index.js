@@ -1,4 +1,4 @@
-var rp = require("request-promise"),
+var rp = require("request"),
     async = require("async");
 
 var HK_REQS = require('./src/Requests.js'),
@@ -104,7 +104,7 @@ TadoThermostatPlatform.prototype = {
                         "token": process.argv[2]
                     });
 
-                    self.log("Getting Temp Unit...")
+                    self.log("Getting Temperature Unit...")
 
                     self.get.TEMP_UNIT()
                         .then(response => {
@@ -149,6 +149,8 @@ TadoThermostatPlatform.prototype = {
                     self.get = new HK_REQS(self.username, self.password, self.homeID, {
                         "token": process.argv[2]
                     });
+                    
+                    self.log("Getting Zones...")
 
                     self.get.HOME_ZONES()
                         .then(response => {
