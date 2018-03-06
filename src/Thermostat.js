@@ -1,5 +1,5 @@
 var moment = require('moment'),
-    rp = require("request-promise"),
+    rp = require("request"),
     HK_REQS = require('./Requests.js'),
     pollingtoevent = require("polling-to-event");
 
@@ -57,25 +57,6 @@ class THERMOSTAT {
         this.url_state = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/zones/" + this.zoneID + "/state?password=" + this.password +
             "&username=" + this.username;
-
-
-        this.emitter_devices = pollingtoevent(function(done) {
-            rp.get(platform.url_devices, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 10000
-        });
-
-        this.emitter_state = pollingtoevent(function(done) {
-            rp.get(platform.url_state, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 5000
-        });
 
     }
 
@@ -162,7 +143,16 @@ class THERMOSTAT {
 
         var self = this;
 
-        this.emitter_devices
+        var emitter_devices = pollingtoevent(function(done) {
+            rp.get(self.url_devices, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: false,
+            interval: 10000
+        });
+
+        emitter_devices
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
@@ -190,13 +180,15 @@ class THERMOSTAT {
 
             })
             .on("error", function(err) {
-                self.log("An Error occured: %s", err);
-                self.log("Setting Battery Level to: " + self.batteryLevel);
-                self.log("Setting Battery Status to: " + self.batteryStatus);
+                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
                 self.BatteryService.getCharacteristic(Characteristic.BatteryLevel)
                     .updateValue(self.batteryLevel);
                 self.BatteryService.getCharacteristic(Characteristic.StatusLowBattery)
                     .updateValue(self.batteryStatus);
+                emitter_devices.pause();
+                setTimeout(function() {
+                    emitter_devices.resume();
+                }, 10000)
             });
 
     }
@@ -205,7 +197,16 @@ class THERMOSTAT {
 
         var self = this;
 
-        this.emitter_state
+        var emitter_state = pollingtoevent(function(done) {
+            rp.get(self.url_state, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: false,
+            interval: 5000
+        });
+
+        emitter_state
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
@@ -261,17 +262,16 @@ class THERMOSTAT {
 
             })
             .on("error", function(err) {
-                self.log("An Error occured: %s", err);
-                self.log("Setting Current Temperature to: " + self.currenttemp);
-                self.log("Setting Target Temperature to: " + self.targettemp);
-                self.log("Setting Humidty to: " + self.humidity);
-                self.log("Setting Current State to: " + self.currentstate);
-                self.log("Setting Target State to: " + self.targetstate);
+                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
                 self.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.currenttemp);
                 self.Thermostat.getCharacteristic(Characteristic.TargetTemperature).updateValue(self.targettemp);
                 self.Thermostat.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(self.humidity);
                 self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(self.currentstate);
                 self.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).updateValue(self.targetstate);
+                emitter_state.pause();
+                setTimeout(function() {
+                    emitter_state.resume();
+                }, 10000)
             });
 
     }
