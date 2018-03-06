@@ -1,5 +1,5 @@
 var moment = require('moment'),
-    rp = require("request-promise"),
+    rp = require("request"),
     pollingtoevent = require("polling-to-event");
 
 var Accessory,
@@ -34,15 +34,6 @@ class WEATHER {
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/weather?password=" + this.password +
             "&username=" + this.username;
-
-        this.emitter = pollingtoevent(function(done) {
-            rp.get(platform.url, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 7 * 60 * 1000
-        });
 
     }
 
@@ -82,7 +73,16 @@ class WEATHER {
 
         var self = this;
 
-        self.emitter
+        var emitter = pollingtoevent(function(done) {
+            rp.get(self.url, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: false,
+            interval: 5 * 60 * 1000
+        });
+
+        emitter
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
@@ -103,10 +103,13 @@ class WEATHER {
 
             })
             .on("error", function(err) {
-                self.log("An Error occured: %s", err);
-                self.log("Setting Current Temperature to: " + self.temp);
+                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
                 self.Weather.getCharacteristic(Characteristic.CurrentTemperature)
                     .updateValue(self.temp);
+                emitter.pause();
+                setTimeout(function() {
+                    emitter.resume();
+                }, 10000)
             });
 
     }
