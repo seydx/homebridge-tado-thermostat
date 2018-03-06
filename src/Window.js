@@ -1,5 +1,5 @@
 var moment = require('moment'),
-    rp = require("request-promise"),
+    rp = require("request"),
     pollingtoevent = require("polling-to-event");
 
 var Accessory,
@@ -35,15 +35,6 @@ class WINDOW {
             "/zones/" + this.zoneID + "/state?password=" + this.password +
             "&username=" + this.username;
 
-        this.emitter = pollingtoevent(function(done) {
-            rp.get(platform.url, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 5000
-        });
-
     }
 
     getServices() {
@@ -71,7 +62,17 @@ class WINDOW {
 
         var self = this;
 
-        self.emitter
+        var emitter = pollingtoevent(function(done) {
+            rp.get(self.url, function(err, req, data) {
+	            
+                done(err, data);
+            });
+        }, {
+            longpolling: false,
+            interval: 5000
+        });
+
+        emitter
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
@@ -83,10 +84,13 @@ class WINDOW {
 
             })
             .on("error", function(err) {
-                self.log("An Error occured: %s", err);
-                self.log("Setting Windows State to: " + self.state);
+                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
                 self.Window.getCharacteristic(Characteristic.ContactSensorState)
                     .updateValue(self.state);
+                emitter.pause();
+                setTimeout(function() {
+                    emitter.resume();
+                }, 10000)
             });
 
     }
