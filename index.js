@@ -254,7 +254,7 @@ TadoThermostatPlatform.prototype = {
                             var occupancyArray = []
 
                             for (var i = 0; i < occupancies.length; i++) {
-                                if (occupancies[i].settings.geoTrackingEnabled == true) {
+                                if (occupancies[i].settings.geoTrackingEnabled == true && self.occupancyEnabled == true) {
 
                                     toConfig = {
                                         name: occupancies[i].name,
@@ -270,7 +270,7 @@ TadoThermostatPlatform.prototype = {
                                 }
                             }
 
-                            if (occupancyArray.length > 0) {
+                            if (occupancyArray.length > 0 && self.occupancyEnabled == true) {
                                 toConfig = {
                                     name: "Anyone",
                                     id: 999999,
