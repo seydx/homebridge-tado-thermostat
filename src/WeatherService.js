@@ -1,4 +1,4 @@
-var rp = require("request-promise"),
+var rp = require("request"),
     inherits = require("util").inherits,
     pollingtoevent = require("polling-to-event");
 
@@ -47,15 +47,6 @@ class WEATHERSERVICE {
             "/weather?password=" + this.password +
             "&username=" + this.username;
 
-        this.emitter = pollingtoevent(function(done) {
-            rp.get(platform.url, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 60 * 60 * 1000
-        });
-
     }
 
     getServices() {
@@ -84,7 +75,16 @@ class WEATHERSERVICE {
 
         var self = this;
 
-        self.emitter
+        var emitter = pollingtoevent(function(done) {
+            rp.get(self.url, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: false,
+            interval: 15 * 60 * 1000
+        });
+
+        emitter
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
@@ -95,10 +95,13 @@ class WEATHERSERVICE {
 
             })
             .on("error", function(err) {
-                self.log("An Error occured: %s", err);
-                self.log("Setting Current Weather state to: " + self.weather);
+                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
                 self.weatherService.getCharacteristic(WeatherCharacteristic)
                     .updateValue(self.weather);
+                emitter.pause();
+                setTimeout(function() {
+                    emitter.resume();
+                }, 10000)
             });
 
     }
