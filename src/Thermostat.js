@@ -210,48 +210,52 @@ class THERMOSTAT {
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
+                
+                if(result.sensorDataPoints != undefined){
+	                
+	                self.humidity = result.sensorDataPoints.humidity.percentage;
 
-                self.humidity = result.sensorDataPoints.humidity.percentage;
-
-                if (result.setting.power == "ON") {
-
-                    if (self.tempUnit == "CELSIUS") {
-                        self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
-                        self.targettemp = result.setting.temperature.celsius;
-                    } else {
-                        self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
-                        self.targettemp = result.setting.temperature.fahrenheit;
-                    }
-
-                    if (result.overlayType == null) {
-
-                        self.currentstate = 0;
-                        self.targetstate = 3;
-
-                    } else {
-
-                        if (Math.round(self.currenttemp) >= Math.round(self.targettemp)) {
-                            self.currentstate = 2;
-                            self.targetstate = 2;
-
-                        } else {
-                            self.currentstate = 1;
-                            self.targetstate = 1;
-                        }
-
-                    }
-
-                } else {
-                    self.currentstate = 0;
-                    self.targetstate = 0;
-
-                    if (self.tempUnit == "CELSIUS") {
-                        self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
-                        self.targettemp = result.sensorDataPoints.insideTemperature.celsius;
-                    } else {
-                        self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
-                        self.targettemp = result.sensorDataPoints.insideTemperature.fahrenheit;
-                    }
+	                if (result.setting.power == "ON") {
+	
+	                    if (self.tempUnit == "CELSIUS") {
+	                        self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
+	                        self.targettemp = result.setting.temperature.celsius;
+	                    } else {
+	                        self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
+	                        self.targettemp = result.setting.temperature.fahrenheit;
+	                    }
+	
+	                    if (result.overlayType == null) {
+	
+	                        self.currentstate = 0;
+	                        self.targetstate = 3;
+	
+	                    } else {
+	
+	                        if (Math.round(self.currenttemp) >= Math.round(self.targettemp)) {
+	                            self.currentstate = 2;
+	                            self.targetstate = 2;
+	
+	                        } else {
+	                            self.currentstate = 1;
+	                            self.targetstate = 1;
+	                        }
+	
+	                    }
+	
+	                } else {
+	                    self.currentstate = 0;
+	                    self.targetstate = 0;
+	
+	                    if (self.tempUnit == "CELSIUS") {
+	                        self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
+	                        self.targettemp = result.sensorDataPoints.insideTemperature.celsius;
+	                    } else {
+	                        self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
+	                        self.targettemp = result.sensorDataPoints.insideTemperature.fahrenheit;
+	                    }
+	                }
+                
                 }
 
                 self.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.currenttemp);
