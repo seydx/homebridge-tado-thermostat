@@ -1,5 +1,5 @@
 var moment = require('moment'),
-    rp = require("request-promise"),
+    rp = require("request"),
     pollingtoevent = require("polling-to-event"),
     HK_REQS = require('./Requests.js');
 
@@ -64,6 +64,8 @@ class SWITCH {
     getSwitch(callback) {
 
         var self = this;
+        
+        var failed, error;
 
         for (var i = 0; i < self.roomids.length; i++) {
 
@@ -82,15 +84,14 @@ class SWITCH {
 
                 })
                 .catch(err => {
-
-                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                        self.log("No connection! Reconnect...");
-                    } else {
-                        self.log("Error: " + err);
-                    }
-
+                    failed = true;
+                    error = err.message
                 });
 
+        }
+        
+        if (failed) {
+            self.log("An Error occured: " + error);
         }
 
         if (self.offstate > 0) {
@@ -110,7 +111,7 @@ class SWITCH {
 
         if (state) {
 
-            var self = this;
+            var failed, error;
 
             for (var i = 0; i < self.roomids.length; i++) {
 
@@ -121,26 +122,26 @@ class SWITCH {
                 }, _, _, _, _, _, self.roomids[i]);
 
                 self.get.STATE_OFF_ALL()
-                    .then(response => {})
+                    .then(response => {
+                        failed = false
+                    })
                     .catch(err => {
-
-                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                            self.log("No connection! Reconnect...");
-                        } else {
-                            self.log("Error: " + err);
-                        }
-
+                        failed = true;
+                        error = err.message
                     });
 
             }
 
             self.offstate = 1;
+            if (failed) {
+                self.log("An Error occured: " + error);
+            }
             self.log("Turning all Thermostats off!");
             callback(null, true)
 
         } else {
 
-            var self = this;
+            var failed, error;
 
             for (var i = 0; i < self.roomids.length; i++) {
 
@@ -151,20 +152,20 @@ class SWITCH {
                 }, _, _, _, _, _, self.roomids[i]);
 
                 self.get.STATE_AUTO_ALL()
-                    .then(response => {})
+                    .then(response => {
+                        failed = false
+                    })
                     .catch(err => {
-
-                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                            self.log("No connection! Reconnect...");
-                        } else {
-                            self.log("Error: " + err);
-                        }
-
+                        failed = true;
+                        error = err.message
                     });
 
             }
 
             self.offstate = 0;
+            if (failed) {
+                self.log(self.name + ": An Error occured: " + error);
+            }
             self.log("Turning all Thermostats to auto mode!");
             callback(null, false)
 
