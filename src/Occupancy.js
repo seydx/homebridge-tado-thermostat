@@ -1,5 +1,5 @@
 var moment = require('moment'),
-    rp = require("request-promise"),
+    rp = require("request"),
     pollingtoevent = require("polling-to-event"),
     inherits = require("util").inherits;
 
@@ -90,15 +90,6 @@ class USER {
             "/mobileDevices?password=" + this.password +
             "&username=" + this.username;
 
-        this.emitter = pollingtoevent(function(done) {
-            rp.get(platform.url, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 3000
-        });
-
     }
 
     getServices() {
@@ -153,7 +144,7 @@ class USER {
                 self.Motion.getCharacteristic(EveMotionDuration).getValue();
                 self.Motion.getCharacteristic(EveMotionLastActivation).getValue();
                 poll()
-            }, 2000)
+            }, 5000)
         })();
 
         return [this.informationService, this.Motion, this.historyService];
@@ -164,10 +155,19 @@ class USER {
 
         var self = this;
 
+        var emitter = pollingtoevent(function(done) {
+            rp.get(self.url, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: false,
+            interval: 5000
+        });
+
         var active = 0;
         var inactive = 0;
 
-        self.emitter
+        emitter
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
@@ -177,13 +177,16 @@ class USER {
 
                         var userStatus = false;
                         var distance = 1;
+                        var test = false;
 
                         if (result[i].settings.geoTrackingEnabled == true) {
                             userStatus = result[i].location.atHome;
                             distance = result[i].location.relativeDistanceFromHomeFence;
+                            //test = result[i].settings.geoTrackingEnabled;
                         }
 
-                        if (userStatus == true || distance < 0.3) {
+                        if (userStatus == true || distance < 0.1) {
+                            //if (test == true) {
                             self.state = 1;
                             self.now = moment().unix();
                             active = 1;
@@ -214,10 +217,13 @@ class USER {
 
             })
             .on("error", function(err) {
-                self.log("An Error occured: %s", err);
-                self.log("Setting Motion/Occupancy State to: " + self.state);
+                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
                 self.Motion.getCharacteristic(Characteristic.MotionDetected)
                     .updateValue(self.state);
+                emitter.pause();
+                setTimeout(function() {
+                    emitter.resume();
+                }, 10000)
             });
 
     }
@@ -226,10 +232,19 @@ class USER {
 
         var self = this;
 
+        var emitter = pollingtoevent(function(done) {
+            rp.get(self.url, function(err, req, data) {
+                done(err, data);
+            });
+        }, {
+            longpolling: false,
+            interval: 5000
+        });
+
         var active = 0;
         var inactive = 0;
 
-        self.emitter
+        emitter
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
@@ -272,10 +287,13 @@ class USER {
 
             })
             .on("error", function(err) {
-                self.log("An Error occured: %s", err);
-                self.log("Setting Motion/Occupancy State to: " + self.state);
+                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
                 self.Motion.getCharacteristic(Characteristic.MotionDetected)
                     .updateValue(self.state);
+                emitter.pause();
+                setTimeout(function() {
+                    emitter.resume();
+                }, 10000)
             });
 
     }
