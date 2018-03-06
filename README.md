@@ -115,7 +115,8 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Occupancy Sensor
 - [x] Weather State Service
 - [x] Central switch to put all thermostats in off/on mode
-- [ ] Hot Water
+- [x] Better error handling
+- [ ] Hot Water (in work)
 - [ ] Dynamic Platform
 
 
