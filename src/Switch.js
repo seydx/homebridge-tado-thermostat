@@ -1,7 +1,5 @@
 var moment = require('moment'),
-    rp = require("request"),
-    pollingtoevent = require("polling-to-event"),
-    HK_REQS = require('./Requests.js');
+    rp = require("request");
 
 var Accessory,
     Service,
@@ -27,8 +25,9 @@ class SWITCH {
         this.username = config.username;
         this.password = config.password;
         this.roomids = JSON.parse(config.roomids);
-        this.stateArray = [];
         this.offstate = 0;
+        this.active = 0;
+        this.roomID;
 
     }
 
@@ -64,42 +63,35 @@ class SWITCH {
     getSwitch(callback) {
 
         var self = this;
-        
-        var failed, error;
 
         for (var i = 0; i < self.roomids.length; i++) {
 
-            var _;
+            self.roomID = self.roomids[i];
 
-            self.get = new HK_REQS(self.username, self.password, self.homeID, {
-                "token": process.argv[2]
-            }, _, _, _, _, _, self.roomids[i]);
+            var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/state?username=" + self.username + "&password=" + self.password
 
-            self.get.CENTRAL_STATE()
-                .then(response => {
-
-                    if (response.setting.power == "OFF") {
-                        self.offstate = 1;
+            rp(url, function(error, response, body) {
+                    var response = JSON.parse(body);
+                    if (response.setting.power == "ON") {
+                        self.offstate += 1;
                     }
-
                 })
-                .catch(err => {
-                    failed = true;
-                    error = err.message
+                .on('error', function(err) {
+                    self.log("ERROR: " + err.message);
                 });
 
         }
-        
-        if (failed) {
-            self.log("An Error occured: " + error);
-        }
 
-        if (self.offstate > 0) {
-            self.stateArray = []
+        if (self.offstate == 0) {
+            self.active = 0;
+            callback(null, false)
+        } else if (self.offstate == self.roomids.length) {
+            self.offstate = 0;
+            self.active = 1;
             callback(null, true)
         } else {
-            self.stateArray = []
-            callback(null, false)
+            self.offstate = 0;
+            self.active == 0 ? callback(null, false) : callback(null, true)
         }
 
 
@@ -111,62 +103,53 @@ class SWITCH {
 
         if (state) {
 
-            var failed, error;
-
             for (var i = 0; i < self.roomids.length; i++) {
 
-                var _;
+                var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/overlay?username=" + self.username + "&password=" + self.password
 
-                self.get = new HK_REQS(self.username, self.password, self.homeID, {
-                    "token": process.argv[2]
-                }, _, _, _, _, _, self.roomids[i]);
-
-                self.get.STATE_OFF_ALL()
-                    .then(response => {
-                        failed = false
+                rp({
+                        url: url,
+                        method: 'DELETE'
                     })
-                    .catch(err => {
-                        failed = true;
-                        error = err.message
+                    .on('error', function(err) {
+                        self.log("ERROR: " + err.message);
                     });
 
             }
 
-            self.offstate = 1;
-            if (failed) {
-                self.log("An Error occured: " + error);
-            }
-            self.log("Turning all Thermostats off!");
+            self.offstate = self.roomids.length;
+            self.active = 1;
+            self.log("Thermostats switching to auto mode!");
             callback(null, true)
 
         } else {
 
-            var failed, error;
-
             for (var i = 0; i < self.roomids.length; i++) {
 
-                var _;
+                var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/overlay?username=" + self.username + "&password=" + self.password
 
-                self.get = new HK_REQS(self.username, self.password, self.homeID, {
-                    "token": process.argv[2]
-                }, _, _, _, _, _, self.roomids[i]);
-
-                self.get.STATE_AUTO_ALL()
-                    .then(response => {
-                        failed = false
+                rp({
+                        url: url,
+                        method: 'PUT',
+                        json: {
+                            "setting": {
+                                "type": "HEATING",
+                                "power": "OFF"
+                            },
+                            "termination": {
+                                "type": "MANUAL"
+                            }
+                        }
                     })
-                    .catch(err => {
-                        failed = true;
-                        error = err.message
-                    });
+                    .on('error', function(err) {
+                        self.log("ERROR: " + err.message);
+                    })
 
             }
 
             self.offstate = 0;
-            if (failed) {
-                self.log(self.name + ": An Error occured: " + error);
-            }
-            self.log("Turning all Thermostats to auto mode!");
+            self.active = 0;
+            self.log("Thermostats switching off!");
             callback(null, false)
 
         }
