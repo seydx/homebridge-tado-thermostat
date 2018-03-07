@@ -64,7 +64,7 @@ class WINDOW {
 
         var emitter = pollingtoevent(function(done) {
             rp.get(self.url, function(err, req, data) {
-	            
+
                 done(err, data);
             });
         }, {
