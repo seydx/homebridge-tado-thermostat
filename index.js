@@ -149,7 +149,7 @@ TadoThermostatPlatform.prototype = {
                     self.get = new HK_REQS(self.username, self.password, self.homeID, {
                         "token": process.argv[2]
                     });
-                    
+
                     self.log("Getting Zones...")
 
                     self.get.HOME_ZONES()
