@@ -27,11 +27,11 @@
     "homebridge": "^0.4.38"
   },
   "dependencies": {
-    "async": "*",
+    "async": "^2.6.0",
     "fakegato-history": "^0.4.3",
     "moment": "^2.21.0",
-    "request": "*",
-    "request-promise": "^4.2.2",
-    "polling-to-event": "^2.1.0"
+    "polling-to-event": "^2.1.0",
+    "request": "^2.83.0",
+    "request-promise": "^4.2.2"
   }
 }
