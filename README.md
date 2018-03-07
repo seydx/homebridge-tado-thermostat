@@ -32,8 +32,8 @@ This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sens
 
 **Central Switch:**
 - If enabled in config.json this plugin creates a central switch to turning off/on all thermostats together with just one click!
-- Turning on the switch means, turning off ALL Thermostats
-- Turnun off the switch means, turning ALL Thermostats into automatic mode!
+- Turning on the switch means, turn ALL thermostats into automatic mode
+- Turning off the switch means, turn ALL thermostats off
 
 See [Images](https://github.com/SeydX/homebridge-tado-thermostat/tree/master/images/) for more details.
 
