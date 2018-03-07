@@ -1,6 +1,5 @@
 var moment = require('moment'),
     rp = require("request"),
-    HK_REQS = require('./Requests.js'),
     pollingtoevent = require("polling-to-event");
 
 var Accessory,
@@ -44,10 +43,6 @@ class THERMOSTAT {
         !this.targettemp ? this.targettemp = 0 : this.targettemp;
         !this.currentstate ? this.currentstate = 0 : this.currentstate;
         !this.targetstate ? this.targetstate = 3 : this.targetstate;
-
-        this.get = new HK_REQS(platform.username, platform.password, platform.homeID, {
-            "token": process.argv[2]
-        }, platform.zoneID, platform.coolValue, platform.heatValue);
 
         this.url_devices = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/zones/" + this.zoneID +
@@ -210,52 +205,52 @@ class THERMOSTAT {
             .on("poll", function(data) {
 
                 var result = JSON.parse(data);
-                
-                if(result.sensorDataPoints != undefined){
-	                
-	                self.humidity = result.sensorDataPoints.humidity.percentage;
 
-	                if (result.setting.power == "ON") {
-	
-	                    if (self.tempUnit == "CELSIUS") {
-	                        self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
-	                        self.targettemp = result.setting.temperature.celsius;
-	                    } else {
-	                        self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
-	                        self.targettemp = result.setting.temperature.fahrenheit;
-	                    }
-	
-	                    if (result.overlayType == null) {
-	
-	                        self.currentstate = 0;
-	                        self.targetstate = 3;
-	
-	                    } else {
-	
-	                        if (Math.round(self.currenttemp) >= Math.round(self.targettemp)) {
-	                            self.currentstate = 2;
-	                            self.targetstate = 2;
-	
-	                        } else {
-	                            self.currentstate = 1;
-	                            self.targetstate = 1;
-	                        }
-	
-	                    }
-	
-	                } else {
-	                    self.currentstate = 0;
-	                    self.targetstate = 0;
-	
-	                    if (self.tempUnit == "CELSIUS") {
-	                        self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
-	                        self.targettemp = result.sensorDataPoints.insideTemperature.celsius;
-	                    } else {
-	                        self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
-	                        self.targettemp = result.sensorDataPoints.insideTemperature.fahrenheit;
-	                    }
-	                }
-                
+                if (result.sensorDataPoints != undefined) {
+
+                    self.humidity = result.sensorDataPoints.humidity.percentage;
+
+                    if (result.setting.power == "ON") {
+
+                        if (self.tempUnit == "CELSIUS") {
+                            self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
+                            self.targettemp = result.setting.temperature.celsius;
+                        } else {
+                            self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
+                            self.targettemp = result.setting.temperature.fahrenheit;
+                        }
+
+                        if (result.overlayType == null) {
+
+                            self.currentstate = 0;
+                            self.targetstate = 3;
+
+                        } else {
+
+                            if (Math.round(self.currenttemp) >= Math.round(self.targettemp)) {
+                                self.currentstate = 2;
+                                self.targetstate = 2;
+
+                            } else {
+                                self.currentstate = 1;
+                                self.targetstate = 1;
+                            }
+
+                        }
+
+                    } else {
+                        self.currentstate = 0;
+                        self.targetstate = 0;
+
+                        if (self.tempUnit == "CELSIUS") {
+                            self.currenttemp = result.sensorDataPoints.insideTemperature.celsius;
+                            self.targettemp = result.sensorDataPoints.insideTemperature.celsius;
+                        } else {
+                            self.currenttemp = result.sensorDataPoints.insideTemperature.fahrenheit;
+                            self.targettemp = result.sensorDataPoints.insideTemperature.fahrenheit;
+                        }
+                    }
+
                 }
 
                 self.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.currenttemp);
@@ -305,77 +300,98 @@ class THERMOSTAT {
 
         var self = this;
 
-        self.get = new HK_REQS(self.username, self.password, self.homeID, {
-            "token": process.argv[2]
-        }, self.zoneID, self.heatValue, self.coolValue, self.currenttemp);
+        var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password;
 
         switch (state) {
             case Characteristic.TargetHeatingCoolingState.OFF:
 
-                self.get.STATE_OFF()
-                    .then(response => {
+                var onOff = "OFF"
 
-                        self.log(self.displayName + ": OFF");
-                        callback()
-
-                    })
-                    .catch(err => {
-
-                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                            self.log(self.displayName + ": No connection - Trying to reconnect...");
-                            callback()
-                        } else {
-                            self.log(self.displayName + ": Error: " + err);
-                            callback()
+                rp({
+                        url: url,
+                        method: 'PUT',
+                        json: {
+                            "setting": {
+                                "type": "HEATING",
+                                "power": onOff
+                            },
+                            "termination": {
+                                "type": "MANUAL"
+                            }
                         }
+                    })
+                    .on('response', function(res) {
+                        self.log(self.displayName + ": Switched OFF");
+                    })
+                    .on('error', function(err) {
+                        self.log(self.displayName + " - Error: " + err);
+                    })
 
-                    });
+                callback()
 
                 break;
 
             case Characteristic.TargetHeatingCoolingState.HEAT:
 
-                self.get.STATE_HEAT()
-                    .then(response => {
+                var onOff = "ON"
+                var setTemp = self.currenttemp + self.heatValue;
 
-                        self.log(self.displayName + ": HEAT");
-                        callback()
-
-                    })
-                    .catch(err => {
-
-                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                            self.log(self.displayName + ": No connection - Trying to reconnect...");
-                            callback()
-                        } else {
-                            self.log(self.displayName + ": Error: " + err);
-                            callback()
+                rp({
+                        url: url,
+                        method: 'PUT',
+                        json: {
+                            "setting": {
+                                "type": "HEATING",
+                                "power": onOff,
+                                "temperature": {
+                                    "celsius": setTemp
+                                }
+                            },
+                            "termination": {
+                                "type": "MANUAL"
+                            }
                         }
+                    })
+                    .on('response', function(res) {
+                        self.log(self.displayName + ": Switched to HEAT");
+                    })
+                    .on('error', function(err) {
+                        self.log(self.displayName + " - Error: " + err);
+                    })
 
-                    });
+                callback()
 
                 break;
 
             case Characteristic.TargetHeatingCoolingState.COOL:
 
-                self.get.STATE_COOL()
-                    .then(response => {
+                var onOff = "ON"
+                var setTemp = self.currenttemp - self.coolValue;
 
-                        self.log(self.displayName + ": COOL");
-                        callback()
-
-                    })
-                    .catch(err => {
-
-                        if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                            self.log(self.displayName + ": No connection - Trying to reconnect...");
-                            callback()
-                        } else {
-                            self.log(self.displayName + ": Error: " + err);
-                            callback()
+                rp({
+                        url: url,
+                        method: 'PUT',
+                        json: {
+                            "setting": {
+                                "type": "HEATING",
+                                "power": onOff,
+                                "temperature": {
+                                    "celsius": setTemp
+                                }
+                            },
+                            "termination": {
+                                "type": "MANUAL"
+                            }
                         }
+                    })
+                    .on('response', function(res) {
+                        self.log(self.displayName + ": Switched to COOL");
+                    })
+                    .on('error', function(err) {
+                        self.log(self.displayName + " - Error: " + err);
+                    })
 
-                    });
+                callback()
 
                 break;
 
@@ -392,52 +408,39 @@ class THERMOSTAT {
 
                     sleep(self.delaytimer).then(() => {
 
-                        self.get.STATE_AUTO()
-                            .then(response => {
-
-                                self.log(self.displayName + ": AUTO");
-                                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
-                                callback()
-
+                        rp({
+                                url: url,
+                                method: 'DELETE'
                             })
-                            .catch(err => {
+                            .on('response', function(res) {
+                                self.log(self.displayName + ": Switched to AUTO");
+                            })
+                            .on('error', function(err) {
+                                self.log(self.displayName + " - Error: " + err);
+                            })
 
-                                if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                    self.log(self.displayName + ": No connection - Trying to reconnect...");
-                                    callback()
-                                } else {
-                                    self.log(self.displayName + ": Error: " + err);
-                                    callback()
-                                }
-
-                            });
+                        self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
 
                     });
 
                 } else {
 
-                    self.log(self.displayName + ": AUTO");
-
-                    self.get.STATE_AUTO()
-                        .then(response => {
-
-                            self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
-                            callback()
-
+                    rp({
+                            url: url,
+                            method: 'DELETE'
                         })
-                        .catch(err => {
+                        .on('response', function(res) {
+                            self.log(self.displayName + ": Switched to AUTO");
+                        })
+                        .on('error', function(err) {
+                            self.log(self.displayName + " - Error: " + err);
+                        })
 
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log(self.displayName + ": No connection - Trying to reconnect...");
-                                callback()
-                            } else {
-                                self.log(self.displayName + ": Error: " + err);
-                                callback()
-                            }
-
-                        });
+                    self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
 
                 }
+
+                callback()
 
                 break;
         }
@@ -448,9 +451,7 @@ class THERMOSTAT {
 
         var self = this;
 
-        self.get = new HK_REQS(self.username, self.password, self.homeID, {
-            "token": process.argv[2]
-        }, self.zoneID, self.heatValue, self.coolValue, self.currenttemp, value);
+        var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password;
 
         if (self.targetstate == 0) {
             self.log("Can't set new Temperature, Thermostat is off");
@@ -459,25 +460,33 @@ class THERMOSTAT {
             self.log("Can't set new Temperature, Thermostat is in auto mode");
             callback()
         } else {
-            self.get.STATE_NEWTEMP()
-                .then(response => {
 
-                    self.log(self.displayName + ": " + value);
-                    callback()
+            var onOff = "ON"
 
-                })
-                .catch(err => {
-
-                    if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                        self.log("Thermostat: No connection...");
-                        callback()
-                    } else {
-                        self.log(self.displayName + ": Error: " + err);
-                        callback()
+            rp({
+                    url: url,
+                    method: 'PUT',
+                    json: {
+                        "setting": {
+                            "type": "HEATING",
+                            "power": onOff,
+                            "temperature": {
+                                "celsius": value
+                            }
+                        },
+                        "termination": {
+                            "type": "MANUAL"
+                        }
                     }
+                })
+                .on('response', function(res) {
+                    self.log(self.displayName + ": " + value);
+                })
+                .on('error', function(err) {
+                    self.log(self.displayName + " - Error: " + err);
+                })
 
-                });
-
+            callback()
         }
 
     }
