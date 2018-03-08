@@ -3,8 +3,7 @@ var moment = require('moment'),
 
 var Accessory,
     Service,
-    Characteristic,
-    FakeGatoHistoryService;
+    Characteristic;
 
 class SWITCH {
 
@@ -26,8 +25,6 @@ class SWITCH {
         this.password = config.password;
         this.roomids = JSON.parse(config.roomids);
         this.offstate = 0;
-        this.active = 0;
-        this.roomID;
 
     }
 
@@ -66,14 +63,16 @@ class SWITCH {
 
         for (var i = 0; i < self.roomids.length; i++) {
 
-            self.roomID = self.roomids[i];
-
             var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/state?username=" + self.username + "&password=" + self.password
 
             rp(url, function(error, response, body) {
-                    var response = JSON.parse(body);
-                    if (response.setting.power == "ON") {
-                        self.offstate += 1;
+                    if (response != undefined) {
+                        var response = JSON.parse(body);
+                        if (response.setting.power == "ON") {
+                            self.offstate += 1;
+                        }
+                    } else {
+                        self.offstate = 0;
                     }
                 })
                 .on('error', function(err) {
@@ -83,15 +82,10 @@ class SWITCH {
         }
 
         if (self.offstate == 0) {
-            self.active = 0;
             callback(null, false)
-        } else if (self.offstate == self.roomids.length) {
-            self.offstate = 0;
-            self.active = 1;
-            callback(null, true)
         } else {
             self.offstate = 0;
-            self.active == 0 ? callback(null, false) : callback(null, true)
+            callback(null, true)
         }
 
 
@@ -118,7 +112,6 @@ class SWITCH {
             }
 
             self.offstate = self.roomids.length;
-            self.active = 1;
             self.log("Thermostats switching to auto mode!");
             callback(null, true)
 
@@ -148,7 +141,6 @@ class SWITCH {
             }
 
             self.offstate = 0;
-            self.active = 0;
             self.log("Thermostats switching off!");
             callback(null, false)
 
