@@ -79,17 +79,10 @@ TadoThermostatPlatform.prototype = {
                         })
                         .catch(err => {
 
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log("HomeID: No connection - Trying to reconnect...");
-                                setTimeout(function() {
-                                    fetchHomeID(next)
-                                }, 10000)
-                            } else {
-                                self.log("HomeID Error: " + err);
-                                setTimeout(function() {
-                                    fetchHomeID(next)
-                                }, 10000)
-                            }
+                            self.log("HomeID Error: " + err);
+                            setTimeout(function() {
+                                fetchHomeID(next)
+                            }, 10000)
 
                         });
 
@@ -125,17 +118,10 @@ TadoThermostatPlatform.prototype = {
                         })
                         .catch(err => {
 
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log("Temperature Unit: No connection - Trying to reconnect...");
-                                setTimeout(function() {
-                                    fetchTemperatureUnit(next)
-                                }, 10000)
-                            } else {
-                                self.log("Temperature Unit Error: " + err);
-                                setTimeout(function() {
-                                    fetchTemperatureUnit(next)
-                                }, 10000)
-                            }
+                            self.log("Temperature Unit Error: " + err);
+                            setTimeout(function() {
+                                fetchTemperatureUnit(next)
+                            }, 10000)
 
                         });
 
@@ -201,17 +187,10 @@ TadoThermostatPlatform.prototype = {
                         })
                         .catch(err => {
 
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log("Zones: No connection - Trying to reconnect...");
-                                setTimeout(function() {
-                                    fetchZones(next)
-                                }, 10000)
-                            } else {
-                                self.log("Zone Error: " + err);
-                                setTimeout(function() {
-                                    fetchZones(next)
-                                }, 10000)
-                            }
+                            self.log("Zone Error: " + err);
+                            setTimeout(function() {
+                                fetchZones(next)
+                            }, 10000)
 
                         });
 
@@ -288,17 +267,10 @@ TadoThermostatPlatform.prototype = {
                         })
                         .catch(err => {
 
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log("Occupancy: No connection - Trying to reconnect...");
-                                setTimeout(function() {
-                                    fetchOccupancy(next)
-                                }, 10000)
-                            } else {
-                                self.log("Occupancy Error: " + err);
-                                setTimeout(function() {
-                                    fetchOccupancy(next)
-                                }, 10000)
-                            }
+                            self.log("Occupancy Error: " + err);
+                            setTimeout(function() {
+                                fetchOccupancy(next)
+                            }, 10000)
 
                         });
                 }
@@ -372,17 +344,10 @@ TadoThermostatPlatform.prototype = {
                         })
                         .catch(err => {
 
-                            if (err.message.match("ETIMEDOUT") || err.message.match("EHOSTUNREACH")) {
-                                self.log("Window Detection: No connection - Trying to reconnect...");
-                                setTimeout(function() {
-                                    fetchOccupancy(next)
-                                }, 10000)
-                            } else {
-                                self.log("Detection Error: " + err);
-                                setTimeout(function() {
-                                    fetchWindows(next)
-                                }, 10000)
-                            }
+                            self.log("Detection Error: " + err);
+                            setTimeout(function() {
+                                fetchWindows(next)
+                            }, 10000)
 
                         });
                 }
