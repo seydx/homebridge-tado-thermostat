@@ -179,7 +179,7 @@ class USER {
                         var distance = 1;
                         var test = false;
 
-                        if (result[i].settings.geoTrackingEnabled == true) {
+                        if (result[i].settings.geoTrackingEnabled == true && result[i].location != null) {
                             userStatus = result[i].location.atHome;
                             distance = result[i].location.relativeDistanceFromHomeFence;
                             //test = result[i].settings.geoTrackingEnabled;
@@ -253,7 +253,7 @@ class USER {
                 var notathome = 0; //b
 
                 for (var i = 0; i < result.length; i++) {
-                    if (result[i].settings.geoTrackingEnabled == true) {
+                    if (result[i].settings.geoTrackingEnabled == true && result[i].location != null) {
                         result[i].location.atHome == true ? athome = 1 : notathome = 0
                     }
                 }
