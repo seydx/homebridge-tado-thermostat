@@ -1,6 +1,6 @@
 {
   "name": "homebridge-tado-thermostat-plugin",
-  "version": "2.3.9",
+  "version": "2.4.0",
   "description": "homebridge-tado-thermostat",
   "main": "index.js",
   "devDependencies": {},
