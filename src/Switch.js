@@ -66,7 +66,7 @@ class SWITCH {
             var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/state?username=" + self.username + "&password=" + self.password
 
             rp(url, function(error, response, body) {
-                    if (response != undefined) {
+                    if (!error && response != undefined) {
                         var response = JSON.parse(body);
                         if (response.setting.power == "ON") {
                             self.offstate += 1;
@@ -76,7 +76,7 @@ class SWITCH {
                     }
                 })
                 .on('error', function(err) {
-                    self.log("ERROR: " + err.message);
+                    self.log("Error getting switch state: " + err.message);
                 });
 
         }
