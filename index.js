@@ -80,9 +80,9 @@ TadoThermostatPlatform.prototype = {
                         .catch(err => {
 
                             self.log("HomeID Error: " + err);
-                            setTimeout(function() {
-                                fetchHomeID(next)
-                            }, 10000)
+                                setTimeout(function() {
+                                    fetchHomeID(next)
+                                }, 10000)
 
                         });
 
@@ -119,9 +119,9 @@ TadoThermostatPlatform.prototype = {
                         .catch(err => {
 
                             self.log("Temperature Unit Error: " + err);
-                            setTimeout(function() {
-                                fetchTemperatureUnit(next)
-                            }, 10000)
+                                setTimeout(function() {
+                                    fetchTemperatureUnit(next)
+                                }, 10000)
 
                         });
 
@@ -188,9 +188,9 @@ TadoThermostatPlatform.prototype = {
                         .catch(err => {
 
                             self.log("Zone Error: " + err);
-                            setTimeout(function() {
-                                fetchZones(next)
-                            }, 10000)
+                                setTimeout(function() {
+                                    fetchZones(next)
+                                }, 10000)
 
                         });
 
@@ -268,9 +268,9 @@ TadoThermostatPlatform.prototype = {
                         .catch(err => {
 
                             self.log("Occupancy Error: " + err);
-                            setTimeout(function() {
-                                fetchOccupancy(next)
-                            }, 10000)
+                                setTimeout(function() {
+                                    fetchOccupancy(next)
+                                }, 10000)
 
                         });
                 }
@@ -345,9 +345,9 @@ TadoThermostatPlatform.prototype = {
                         .catch(err => {
 
                             self.log("Detection Error: " + err);
-                            setTimeout(function() {
-                                fetchWindows(next)
-                            }, 10000)
+                                setTimeout(function() {
+                                    fetchWindows(next)
+                                }, 10000)
 
                         });
                 }
@@ -409,7 +409,7 @@ TadoThermostatPlatform.prototype = {
                 if (self.centralSwitch) {
 
                     var centralSwitchConfig = {
-                        name: "Central Switch",
+                        name: "Tado Switch",
                         homeID: self.homeID,
                         username: self.username,
                         password: self.password,
