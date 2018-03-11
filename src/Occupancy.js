@@ -85,6 +85,7 @@ class USER {
         !this.state ? this.state = 0 : this.state;
         !this.now ? this.now = 0 : this.now;
         !this.lasttime ? this.lasttime = 0 : this.lasttime;
+        !this.newTime ? this.newTime = 0 : this.newTime;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/mobileDevices?password=" + this.password +
@@ -147,7 +148,36 @@ class USER {
             }, 5000)
         })();
 
+        (function poll() {
+            setTimeout(function() {
+                self.getHistory();
+                poll()
+            }, 2000)
+        })();
+
         return [this.informationService, this.Motion, this.historyService];
+
+    }
+
+    getHistory() {
+
+        var self = this;
+
+        var totallength = self.historyService.history.length - 1;
+        var latestStatus = self.historyService.history[totallength].status;
+
+        if (self.state != latestStatus) {
+	        
+            self.newTime = moment().unix(); //Experimental
+
+            self.historyService.addEntry({
+                time: moment().unix(),
+                status: self.state
+            });
+
+            //self.log(self.name + ": New entry added to history! Old Status: " + latestStatus + " - New Status: " + self.state);
+
+        }
 
     }
 
@@ -186,7 +216,7 @@ class USER {
                         }
 
                         if (userStatus == true || distance < 0.1) {
-                            //if (test == true) {
+                        //if (test == true) {
                             self.state = 1;
                             self.now = moment().unix();
                             active = 1;
@@ -206,11 +236,6 @@ class USER {
                     }
 
                 }
-
-                self.historyService.addEntry({
-                    time: moment().unix(),
-                    status: self.state
-                });
 
                 self.Motion.getCharacteristic(Characteristic.MotionDetected)
                     .updateValue(self.state);
@@ -249,8 +274,8 @@ class USER {
 
                 var result = JSON.parse(data);
 
-                var athome = 0; //a
-                var notathome = 0; //b
+                var athome = 0;
+                var notathome = 0;
 
                 for (var i = 0; i < result.length; i++) {
                     if (result[i].settings.geoTrackingEnabled == true && result[i].location != null) {
@@ -276,11 +301,6 @@ class USER {
                     active = 0;
                     inactive = 0;
                 }
-
-                self.historyService.addEntry({
-                    time: moment().unix(),
-                    status: self.state
-                });
 
                 self.Motion.getCharacteristic(Characteristic.MotionDetected)
                     .updateValue(self.state);
