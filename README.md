@@ -119,6 +119,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Central switch to put all thermostats in off/on mode
 - [x] Better error handling
 - [ ] Hot Water (in work)
+- [ ] Add DEBUG (in work)
 - [ ] Dynamic Platform
 
 
