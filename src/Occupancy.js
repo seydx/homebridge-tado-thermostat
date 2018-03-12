@@ -239,7 +239,6 @@ class USER {
 
                 if (count > 0) {
                     self.state = 1
-                    self.now = moment().unix();
                 } else {
                     self.state = 0
                 }
