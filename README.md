@@ -1,4 +1,4 @@
-# homebridge-tado-thermostat v2.3
+# homebridge-tado-thermostat v2.4
 
 [![npm](https://img.shields.io/npm/v/homebridge-tado-thermostat-plugin.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-tado-thermostat-plugin)
 [![npm](https://img.shields.io/npm/dt/homebridge-tado-thermostat-plugin.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-tado-thermostat-plugin)
@@ -34,6 +34,8 @@ This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sens
 - If enabled in config.json this plugin creates a central switch to turning off/on all thermostats together with just one click!
 - Turning on the switch means, turn ALL thermostats into automatic mode
 - Turning off the switch means, turn ALL thermostats off
+- If ALL thermostats are off, the switch turns off
+- If ONE thermostat is on, the switch turns on
 
 See [Images](https://github.com/SeydX/homebridge-tado-thermostat/tree/master/images/) for more details.
 
