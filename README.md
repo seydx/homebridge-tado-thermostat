@@ -120,6 +120,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Better error handling
 - [ ] Hot Water (in work)
 - [ ] Add DEBUG (in work)
+- [ ] Weather information like pressure, humidity etc. (in work)
 - [ ] Dynamic Platform
 
 
