@@ -83,9 +83,6 @@ class USER {
         this.userID = config.id;
 
         !this.state ? this.state = 0 : this.state;
-        !this.now ? this.now = 0 : this.now;
-        !this.lasttime ? this.lasttime = 0 : this.lasttime;
-        !this.newTime ? this.newTime = 0 : this.newTime;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/mobileDevices?password=" + this.password +
@@ -159,28 +156,6 @@ class USER {
 
     }
 
-    getHistory() {
-
-        var self = this;
-
-        var totallength = self.historyService.history.length - 1;
-        var latestStatus = self.historyService.history[totallength].status;
-
-        if (self.state != latestStatus) {
-	        
-            self.newTime = moment().unix(); //Experimental
-
-            self.historyService.addEntry({
-                time: moment().unix(),
-                status: self.state
-            });
-
-            //self.log(self.name + ": New entry added to history! Old Status: " + latestStatus + " - New Status: " + self.state);
-
-        }
-
-    }
-
     getMotionDetected() {
 
         var self = this;
@@ -194,9 +169,6 @@ class USER {
             interval: 5000
         });
 
-        var active = 0;
-        var inactive = 0;
-
         emitter
             .on("poll", function(data) {
 
@@ -205,31 +177,14 @@ class USER {
                 for (var i = 0; i < result.length; i++) {
                     if (result[i].id == self.userID) {
 
-                        var userStatus = false;
-                        var distance = 1;
-                        var test = false;
-
                         if (result[i].settings.geoTrackingEnabled == true && result[i].location != null) {
-                            userStatus = result[i].location.atHome;
-                            distance = result[i].location.relativeDistanceFromHomeFence;
-                            //test = result[i].settings.geoTrackingEnabled;
-                        }
 
-                        if (userStatus == true || distance < 0.1) {
-                        //if (test == true) {
-                            self.state = 1;
-                            self.now = moment().unix();
-                            active = 1;
-                        } else {
-                            self.state = 0;
-                            active == 1 ? inactive = 1 : inactive = 0;
-
-                            if (inactive == 1) {
-                                self.lasttime = moment().unix();
+                            if (result[i].location.atHome == true || result[i].location.relativeDistanceFromHomeFence < 0.1) {
+                                self.state = 1;
+                            } else {
+                                self.state = 0;
                             }
 
-                            active = 0;
-                            inactive = 0;
 
                         }
 
@@ -266,9 +221,6 @@ class USER {
             interval: 5000
         });
 
-        var active = 0;
-        var inactive = 0;
-
         emitter
             .on("poll", function(data) {
 
@@ -288,18 +240,8 @@ class USER {
                 if (count > 0) {
                     self.state = 1
                     self.now = moment().unix();
-                    athome = 1;
                 } else {
                     self.state = 0
-
-                    active == 1 ? inactive = 1 : inactive = 0;
-
-                    if (inactive == 1) {
-                        self.lasttime = moment().unix();
-                    }
-
-                    active = 0;
-                    inactive = 0;
                 }
 
                 self.Motion.getCharacteristic(Characteristic.MotionDetected)
@@ -318,9 +260,31 @@ class USER {
 
     }
 
+    getHistory() {
+
+        var self = this;
+
+        var totallength = self.historyService.history.length - 1;
+        var latestStatus = self.historyService.history[totallength].status;
+
+        if (self.state != latestStatus) {
+
+            self.historyService.addEntry({
+                time: moment().unix(),
+                status: self.state
+            });
+
+            //self.log(self.name + ": New entry added to history! Old Status: " + latestStatus + " - New Status: " + self.state);
+
+        }
+
+    }
+
     getMotionLastActivation(callback) {
 
         var self = this;
+        var totallength = self.historyService.history.length - 1;
+        var latestTime = self.historyService.history[totallength].time;
 
         if (self.state == true) {
 
@@ -329,7 +293,7 @@ class USER {
 
         } else {
 
-            var last = self.lasttime - self.historyService.getInitialTime();
+            var last = latestTime - self.historyService.getInitialTime();
             callback(null, last)
         }
 
