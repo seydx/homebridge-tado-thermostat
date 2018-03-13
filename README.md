@@ -1,4 +1,4 @@
-# homebridge-tado-thermostat v2.4
+# homebridge-tado-thermostat v3
 
 [![npm](https://img.shields.io/npm/v/homebridge-tado-thermostat-plugin.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-tado-thermostat-plugin)
 [![npm](https://img.shields.io/npm/dt/homebridge-tado-thermostat-plugin.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-tado-thermostat-plugin)
@@ -17,6 +17,12 @@ This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sens
 - Delay timer: You can set up a timer as delay for your thermostats to wait a certain time to go back to the automatic mode (Helpful in automations where you shut off the thermostat after window is opened and in automatic mode if window is closed. So this timer let the thermostat wait a certain time in off mode before going back to auto mode. Helpful if you open the window only for a few minutes)
 - Elgato EVE history feature (Fakegato)
 
+**Boiler: (Experimental)**
+- Expose Tado Hot Water to Apple HomeKit!
+- Additional modes: Heat, Cool, Auto and Off
+- Auto heat/cool to a certain value (configurable in config.json)
+- Elgato EVE history feature (Fakegato)
+
 **Occupancy sensors:**
 - If enabled in config.json **AND** under the settings in the tado app (geotracking) this plugin will create occupancy/motion sensors for all registred persons (configurable in the tado app).
 - In addition to this, it will create an "Anyone" sensor too, to create automations based on "Anyone at home / not at home"
@@ -26,6 +32,7 @@ This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sens
 - If enabled in config.json, this plugin will create a weather sensor for your location based on tado.
 - Weather Service: If enabled in config.json, this plugin creates a Service to expose the current weather state (Sunny, Cloudy, Rainy etc.) to **Elgato EVE** app
 - Elgato EVE history feature (Fakegato)
+- OpenWeather Support: If API and Location setted in config, the Weather accessory will also show the current humidity state and Elgato EVE will also show the airpressure with FakeGato support! Note: Get an API-Key from [openweathermap.org](https://openweathermap.org)
 
 **Window sensors:**
 - If enabled in config.json **AND** under the setting in the tado app (open window detection), this plugin creates windows sensors for each room.
@@ -85,7 +92,8 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "weatherServiceEnabled": false,
     "occupancyEnabled": false,
     "windowDetection": false,
-    "centralSwitch": false
+    "centralSwitch": false,
+    "boilerEnabled":false
     }
   ]
 }
@@ -100,14 +108,19 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | name | no | Name for the Thermostat. Will be used as part of the accessory name.  |
 | username | **Yes** | Tado Login Username |
 | password | **Yes** | Tado Login Password |
+| homeID | No | For faster loading (only by restarting HB), you can put your homeID in your config.json (Default: empty) |
+| tempUnit | No | For faster loading (only by restarting HB), you can put the Temperature Unit in your config.json (Default: empty - Valid values are: CELSIUS or FAHRENHEIT) |
 | heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to **Current Room Temperature + 4 degrees** (Default: 4) |
 | coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to **Current Room Temperature - 4 degrees** (Default: 4) |
 | delaytimer | No | Delay for setting the thermostat back in automatic mode (Default: 0 == not enabled) |
 | weatherEnabled | No | Exposes temperature sensors for your location based on tado (Default: false) | |
 | weatherServiceEnabled | No | Enable Service to check for weather state, eg. cloudy, sunny, clear etc. Only with Elgato EVE app! (Default: false) |
-| occupancyEnabled | No | Exposes occupancy/motion sensors for all registred persons (only if geotracking is enabled in tado! - Default: false) | |
+| occupancyEnabled | No | Exposes occupancy/motion sensors for all registred persons (only if geotracking is enabled in tado! - Default: false) | 
 | windowDetection | No | Exposes window sensors for each room (only if open weather detection is enabled in tado! - Default: false) |
 | centralSwitch | No | Exposes a switch to turning on/off all thermostats with just one click! (Default: false) |
+| boilerEnabled | No | **EXPERIMENTAL!** Expose Tado Hot Water to HomeKit - Default: false) | 
+| heatValueBoiler | No | Value for the BOILER "Heat" mode. Example: a value of 4 will heat up the room to **Current Temperature + 10 degrees** (Default: 10) |
+| coolValueBoiler | No | Value for the BOILER "Cool" mode. Example: a value of 4 will cool down the room to **Current Temperature - 10 degrees** (Default: 10) |
 
 
 ## W.I.P features
@@ -118,9 +131,9 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Weather State Service
 - [x] Central switch to put all thermostats in off/on mode
 - [x] Better error handling
-- [ ] Hot Water (in work)
+- [x] Hot Water (experimental, testing)
 - [ ] Add DEBUG (in work)
-- [ ] Weather information like pressure, humidity etc. (in work)
+- [x] Weather information like pressure, humidity etc.
 - [ ] Dynamic Platform
 
 
