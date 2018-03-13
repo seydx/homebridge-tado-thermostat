@@ -35,7 +35,6 @@ class BOILER {
         this.targetMinValue = config.targetMinValue;
         this.targetMaxValue = config.targetMaxValue;
         this.serialNo = config.serialNo;
-        this.delaytimer = config.delaytimer;
 
         !this.currenttemp ? this.currenttemp = 0 : this.currenttemp;
         !this.targettemp ? this.targettemp = 0 : this.targettemp;
@@ -259,6 +258,8 @@ class BOILER {
                         self.log(self.displayName + " - Error: " + err);
                     })
 
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
+
                 callback()
 
                 break;
@@ -267,7 +268,19 @@ class BOILER {
 
                 var setTemp = self.currenttemp + self.heatValue;
 
-                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
+                if (self.tempUnit == "CELSIUS") {
+                    if (setTemp > 65) {
+                        setTemp = 65;
+                    } else if (setTemp < 30) {
+                        setTemp = 30;
+                    }
+                } else {
+                    if (setTemp > 149) {
+                        setTemp = 149;
+                    } else if (setTemp < 86) {
+                        setTemp = 86;
+                    }
+                }
 
                 rp({
                         url: url,
@@ -293,15 +306,29 @@ class BOILER {
                         self.log(self.displayName + " - Error: " + err);
                     })
 
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
+
                 callback()
 
                 break;
 
             case Characteristic.TargetHeatingCoolingState.COOL:
 
-                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
-
                 var setTemp = self.currenttemp - self.coolValue;
+
+                if (self.tempUnit == "CELSIUS") {
+                    if (setTemp > 65) {
+                        setTemp = 65;
+                    } else if (setTemp < 30) {
+                        setTemp = 30;
+                    }
+                } else {
+                    if (setTemp > 149) {
+                        setTemp = 149;
+                    } else if (setTemp < 86) {
+                        setTemp = 86;
+                    }
+                }
 
                 rp({
                         url: url,
@@ -325,6 +352,8 @@ class BOILER {
                     .on('error', function(err) {
                         self.log(self.displayName + " - Error: " + err);
                     })
+
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
 
                 callback()
 
@@ -388,6 +417,8 @@ class BOILER {
                 .on('error', function(err) {
                     self.log(self.displayName + " - Error: " + err);
                 })
+
+            self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
 
             callback()
         }
