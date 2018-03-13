@@ -32,7 +32,7 @@ This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sens
 - If enabled in config.json, this plugin will create a weather sensor for your location based on tado.
 - Weather Service: If enabled in config.json, this plugin creates a Service to expose the current weather state (Sunny, Cloudy, Rainy etc.) to **Elgato EVE** app
 - Elgato EVE history feature (Fakegato)
-- OpenWeather Support: If API and Location setted in config, the Weather accessory will also show the current humidity state and Elgato EVE will also show the airpressure with FakeGato support! Note: Get an API-Key from [openweathermap.org](https://openweathermap.org)
+- OpenWeather Support: If API and Location setted in config, the Weather accessory will also show the current humidity state and Elgato EVE will also show the airpressure with FakeGato support! Note: You can get an API-Key from [openweathermap.org](https://openweathermap.org) - After sign up, you can create an API Key in the profile section
 
 **Window sensors:**
 - If enabled in config.json **AND** under the setting in the tado app (open window detection), this plugin creates windows sensors for each room.
@@ -119,8 +119,8 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | windowDetection | No | Exposes window sensors for each room (only if open weather detection is enabled in tado! - Default: false) |
 | centralSwitch | No | Exposes a switch to turning on/off all thermostats with just one click! (Default: false) |
 | boilerEnabled | No | **EXPERIMENTAL!** Expose Tado Hot Water to HomeKit - Default: false) | 
-| heatValueBoiler | No | Value for the BOILER "Heat" mode. Example: a value of 4 will heat up the room to **Current Temperature + 10 degrees** (Default: 10) |
-| coolValueBoiler | No | Value for the BOILER "Cool" mode. Example: a value of 4 will cool down the room to **Current Temperature - 10 degrees** (Default: 10) |
+| heatValueBoiler | No | Value for the BOILER "Heat" mode. Example: a value of 4 will heat up the Boiler to **Current Temperature + 10 degrees** (Default: 10) |
+| coolValueBoiler | No | Value for the BOILER "Cool" mode. Example: a value of 4 will cool down the Boiler to **Current Temperature - 10 degrees** (Default: 10) |
 
 
 ## W.I.P features
