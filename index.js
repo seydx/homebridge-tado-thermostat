@@ -52,6 +52,10 @@ function TadoThermostatPlatform(log, config, api) {
     this.windowDetection = config["windowDetection"] || false;
     this.centralSwitch = config["centralSwitch"] || false;
 
+    //Extras Config
+    this.weatherAPI = config["weatherAPI"] || "";
+    this.weatherLocation = config["weatherLocation"] || "";
+
 }
 
 TadoThermostatPlatform.prototype = {
@@ -491,7 +495,9 @@ TadoThermostatPlatform.prototype = {
                         homeID: self.homeID,
                         username: self.username,
                         password: self.password,
-                        tempUnit: self.tempUnit
+                        tempUnit: self.tempUnit,
+                        weatherAPI: self.weatherAPI,
+                        weatherLocation: self.weatherLocation
                     }
                     var weatherAccessory = new Tado_Weather(self.log, weatherConfig, self.api)
                     accessoriesArray.push(weatherAccessory);
