@@ -42,7 +42,7 @@ class THERMOSTAT {
         !this.currenttemp ? this.currenttemp = 0 : this.currenttemp;
         !this.targettemp ? this.targettemp = 0 : this.targettemp;
         !this.currentstate ? this.currentstate = 0 : this.currentstate;
-        !this.targetstate ? this.targetstate = 3 : this.targetstate;
+        !this.targetstate ? this.targetstate = 0 : this.targetstate;
 
         this.url_devices = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/zones/" + this.zoneID +
@@ -305,15 +305,13 @@ class THERMOSTAT {
         switch (state) {
             case Characteristic.TargetHeatingCoolingState.OFF:
 
-                var onOff = "OFF"
-
                 rp({
                         url: url,
                         method: 'PUT',
                         json: {
                             "setting": {
                                 "type": "HEATING",
-                                "power": onOff
+                                "power": "OFF"
                             },
                             "termination": {
                                 "type": "MANUAL"
@@ -333,8 +331,21 @@ class THERMOSTAT {
 
             case Characteristic.TargetHeatingCoolingState.HEAT:
 
-                var onOff = "ON"
                 var setTemp = self.currenttemp + self.heatValue;
+
+                if (self.tempUnit == "CELSIUS") {
+                    if (setTemp > 25) {
+                        setTemp = 25;
+                    } else if (setTemp < 5) {
+                        setTemp = 5;
+                    }
+                } else {
+                    if (setTemp > 77) {
+                        setTemp = 77;
+                    } else if (setTemp < 41) {
+                        setTemp = 41;
+                    }
+                }
 
                 rp({
                         url: url,
@@ -342,7 +353,7 @@ class THERMOSTAT {
                         json: {
                             "setting": {
                                 "type": "HEATING",
-                                "power": onOff,
+                                "power": "ON",
                                 "temperature": {
                                     "celsius": setTemp
                                 }
@@ -365,8 +376,21 @@ class THERMOSTAT {
 
             case Characteristic.TargetHeatingCoolingState.COOL:
 
-                var onOff = "ON"
                 var setTemp = self.currenttemp - self.coolValue;
+
+                if (self.tempUnit == "CELSIUS") {
+                    if (setTemp > 25) {
+                        setTemp = 25;
+                    } else if (setTemp < 5) {
+                        setTemp = 5;
+                    }
+                } else {
+                    if (setTemp > 77) {
+                        setTemp = 77;
+                    } else if (setTemp < 41) {
+                        setTemp = 41;
+                    }
+                }
 
                 rp({
                         url: url,
@@ -374,7 +398,7 @@ class THERMOSTAT {
                         json: {
                             "setting": {
                                 "type": "HEATING",
-                                "power": onOff,
+                                "power": "ON",
                                 "temperature": {
                                     "celsius": setTemp
                                 }
