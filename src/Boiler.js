@@ -135,9 +135,6 @@ class BOILER {
 
                     if (result.setting.power == "ON") {
 
-                        self.currentstate = 0;
-                        self.targetstate = 3;
-
                         if (self.tempUnit == "CELSIUS") {
                             self.currenttemp = result.setting.temperature.celsius;
                             self.targettemp = result.setting.temperature.celsius;
@@ -157,15 +154,9 @@ class BOILER {
 
                         } else {
 
-                            if (Math.round(self.currenttemp) >= Math.round(self.targettemp)) {
-                                self.currentstate = 2;
-                                self.targetstate = 2;
-
-                            } else {
-                                self.currentstate = 1;
-                                self.targetstate = 1;
-                            }
-
+                            self.currentstate = 1;
+                            self.targetstate = 1;
+                            
                         }
 
                     } else {
