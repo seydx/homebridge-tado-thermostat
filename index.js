@@ -41,23 +41,23 @@ function TadoThermostatPlatform(log, config, api) {
     //Thermostat Config
     this.coolValue = config["coolValue"] || 4;
     this.heatValue = config["heatValue"] || 4;
-    this.coolValue = config["coolValueBoiler"] || 10;
-    this.heatValue = config["heatValueBoiler"] || 10;
     this.delaytimer = (config["delaytimer"] * 1000);
 
-    //Extras Config
+    //Boiler Config
+    this.boilerEnabled = config["boilerEnabled"] || false;
+    this.coolValueBoiler = config["coolValueBoiler"] || 10;
+    this.heatValueBoiler = config["heatValueBoiler"] || 10;
+
+    //Weather Config
     this.weatherEnabled = config["weatherEnabled"] || false;
     this.weatherServiceEnabled = config["weatherServiceEnabled"] || false;
-    this.occupancyEnabled = config["occupancyEnabled"] || false;
-    this.windowDetection = config["windowDetection"] || false;
-    this.centralSwitch = config["centralSwitch"] || false;
-
-    //Extras Config
     this.weatherAPI = config["weatherAPI"] || "";
     this.weatherLocation = config["weatherLocation"] || "";
 
-    //Experimental!
-    this.boilerEnabled = config["boilerEnabled"] || false;
+    //Extras Config
+    this.occupancyEnabled = config["occupancyEnabled"] || false;
+    this.windowDetection = config["windowDetection"] || false;
+    this.centralSwitch = config["centralSwitch"] || false;
 
 }
 
@@ -126,13 +126,13 @@ TadoThermostatPlatform.prototype = {
 
                                     if (self.tempUnit = "CELSIUS") {
                                         self.targetMinValue = 5;
-                                        self.targetMinBoilerValue = 30;
                                         self.targetMaxValue = 25;
+                                        self.targetMinBoilerValue = 30;
                                         self.targetMaxBoilerValue = 65;
                                     } else {
                                         self.targetMinValue = 41;
-                                        self.targetMinBoilerValue = 86;
                                         self.targetMaxValue = 77;
+                                        self.targetMinBoilerValue = 86;
                                         self.targetMaxBoilerValue = 149;
                                     }
 
@@ -170,9 +170,12 @@ TadoThermostatPlatform.prototype = {
 
                                 var zones = response;
                                 var zonesArray = []
+                                var count = 0;
 
                                 for (var i = 0; i < zones.length; i++) {
                                     if (zones[i].type.match("HEATING")) {
+
+                                        count += 1;
 
                                         self.idArray.push(zones[i].id);
 
@@ -207,6 +210,11 @@ TadoThermostatPlatform.prototype = {
                                         }
 
                                     }
+                                }
+
+                                if (count == 0) {
+                                    self.log("No Zones found!");
+                                    count = 0;
                                 }
 
                                 next(null, zonesArray)
@@ -248,6 +256,8 @@ TadoThermostatPlatform.prototype = {
 
                     if (self.boilerEnabled) {
 
+                        self.log("Getting Boiler...")
+
                         var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones?username=" + self.username + "&password=" + self.password;
 
                         rp(url, function(error, response, body) {
@@ -256,9 +266,12 @@ TadoThermostatPlatform.prototype = {
 
                                     var zones = response;
                                     var boilerArray = []
+                                    var count = 0;
 
                                     for (var i = 0; i < zones.length; i++) {
                                         if (zones[i].type.match("HOT_WATER")) {
+
+                                            count += 1;
 
                                             var devices = zones[i].devices;
                                             var zonename = zones[i].name;
@@ -280,8 +293,7 @@ TadoThermostatPlatform.prototype = {
                                                         heatValue: self.heatValueBoiler,
                                                         targetMinValue: self.targetMinBoilerValue,
                                                         targetMaxValue: self.targetMaxBoilerValue,
-                                                        serialNo: zones[i].devices[j].shortSerialNo,
-                                                        delaytimer: self.delaytimer
+                                                        serialNo: zones[i].devices[j].shortSerialNo
                                                     }
 
                                                     self.log("Found new Boiler: " + toConfig.name + " (" + toConfig.id + " | " + devices[j].deviceType + ")")
@@ -291,6 +303,11 @@ TadoThermostatPlatform.prototype = {
                                             }
 
                                         }
+                                    }
+
+                                    if (count == 0) {
+                                        self.log("No Boiler installed!");
+                                        count = 0;
                                     }
 
                                     next(null, boilerArray)
@@ -348,9 +365,12 @@ TadoThermostatPlatform.prototype = {
 
                                     var occupancies = response;
                                     var occupancyArray = []
+                                    var count = 0;
 
                                     for (var i = 0; i < occupancies.length; i++) {
                                         if (occupancies[i].settings.geoTrackingEnabled == true && self.occupancyEnabled == true) {
+
+                                            count += 1;
 
                                             toConfig = {
                                                 name: occupancies[i].name,
@@ -377,6 +397,11 @@ TadoThermostatPlatform.prototype = {
 
                                         self.log("Adding ANYONE sensor");
                                         occupancyArray.push(toConfig);
+                                    }
+
+                                    if (count == 0) {
+                                        self.log("No User found!");
+                                        count = 0;
                                     }
 
                                     next(null, occupancyArray)
@@ -436,11 +461,14 @@ TadoThermostatPlatform.prototype = {
 
                                     var windows = response;
                                     var windowArray = []
+                                    var count = 0;
 
                                     for (var i = 0; i < windows.length; i++) {
                                         if (windows[i].openWindowDetection.supported == true && self.windowDetection == true) {
 
                                             if (windows[i].openWindowDetection.enabled == true) {
+
+                                                count += 1;
 
                                                 toConfig = {
                                                     name: windows[i].name + " Window",
@@ -461,6 +489,11 @@ TadoThermostatPlatform.prototype = {
                                             }
 
                                         }
+                                    }
+
+                                    if (count == 0) {
+                                        self.log("No Windows detected!");
+                                        count = 0;
                                     }
 
                                     next(null, windowArray)
