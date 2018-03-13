@@ -56,6 +56,9 @@ function TadoThermostatPlatform(log, config, api) {
     this.weatherAPI = config["weatherAPI"] || "";
     this.weatherLocation = config["weatherLocation"] || "";
 
+    //Experimental!
+    this.boilerEnabled = config["boilerEnabled"] || false;
+
 }
 
 TadoThermostatPlatform.prototype = {
@@ -243,60 +246,67 @@ TadoThermostatPlatform.prototype = {
             function(next) {
                 function fetchBoiler(next) {
 
-                    var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones?username=" + self.username + "&password=" + self.password;
+                    if (self.boilerEnabled) {
 
-                    rp(url, function(error, response, body) {
-                            if (!error && response != undefined) {
-                                var response = JSON.parse(body);
+                        var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones?username=" + self.username + "&password=" + self.password;
 
-                                var zones = response;
-                                var boilerArray = []
+                        rp(url, function(error, response, body) {
+                                if (!error && response != undefined) {
+                                    var response = JSON.parse(body);
 
-                                for (var i = 0; i < zones.length; i++) {
-                                    if (zones[i].type.match("HOT_WATER")) {
+                                    var zones = response;
+                                    var boilerArray = []
 
-                                        var devices = zones[i].devices;
-                                        var zonename = zones[i].name;
+                                    for (var i = 0; i < zones.length; i++) {
+                                        if (zones[i].type.match("HEATING")) {
 
-                                        for (var j = 0; j < devices.length; j++) {
+                                            var devices = zones[i].devices;
+                                            var zonename = zones[i].name;
 
-                                            devices.length > 1 ? zonename = zones[i].name + " " + j : zonename = zones[i].name;
+                                            for (var j = 0; j < devices.length; j++) {
 
-                                            if (devices[j].deviceType.match("BU01")) {
+                                                devices.length > 1 ? zonename = zones[i].name + " " + j : zonename = zones[i].name;
 
-                                                toConfig = {
-                                                    name: zonename + " Hot Water",
-                                                    id: zones[i].id,
-                                                    homeID: self.homeID,
-                                                    username: self.username,
-                                                    password: self.password,
-                                                    tempUnit: self.tempUnit,
-                                                    coolValue: self.coolValueBoiler,
-                                                    heatValue: self.heatValueBoiler,
-                                                    targetMinValue: self.targetMinBoilerValue,
-                                                    targetMaxValue: self.targetMaxBoilerValue,
-                                                    serialNo: zones[i].devices[j].shortSerialNo,
-                                                    delaytimer: self.delaytimer
+                                                if (devices[j].deviceType.match("VA01")) {
+
+                                                    toConfig = {
+                                                        name: zonename + " Hot Water",
+                                                        id: zones[i].id,
+                                                        homeID: self.homeID,
+                                                        username: self.username,
+                                                        password: self.password,
+                                                        tempUnit: self.tempUnit,
+                                                        coolValue: self.coolValueBoiler,
+                                                        heatValue: self.heatValueBoiler,
+                                                        targetMinValue: self.targetMinBoilerValue,
+                                                        targetMaxValue: self.targetMaxBoilerValue,
+                                                        serialNo: zones[i].devices[j].shortSerialNo,
+                                                        delaytimer: self.delaytimer
+                                                    }
+
+                                                    self.log("Found new Boiler: " + toConfig.name + " (" + toConfig.id + " | " + devices[j].deviceType + ")")
+                                                    boilerArray.push(toConfig);
+
                                                 }
-
-                                                self.log("Found new Boiler: " + toConfig.name + " (" + toConfig.id + " | " + devices[j].deviceType + ")")
-                                                boilerArray.push(toConfig);
-
                                             }
+
                                         }
-
                                     }
-                                }
 
-                                next(null, boilerArray)
-                            }
-                        })
-                        .on('error', function(err) {
-                            self.log("Boiler Error: " + err.message);
-                            setTimeout(function() {
-                                fetchBoiler(next)
-                            }, 10000)
-                        });
+                                    next(null, boilerArray)
+                                }
+                            })
+                            .on('error', function(err) {
+                                self.log("Boiler Error: " + err.message);
+                                setTimeout(function() {
+                                    fetchBoiler(next)
+                                }, 10000)
+                            });
+
+                    } else {
+                        var boilerArray;
+                        next(null, boilerArray)
+                    }
 
                 }
                 fetchBoiler(next)
@@ -326,60 +336,63 @@ TadoThermostatPlatform.prototype = {
 
                 function fetchOccupancy(next) {
 
-                    if (self.occupancyEnabled == true) {
+                    if (self.occupancyEnabled) {
 
                         self.log("Getting User...")
 
-                    }
+                        var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/mobileDevices?username=" + self.username + "&password=" + self.password;
 
-                    var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/mobileDevices?username=" + self.username + "&password=" + self.password;
+                        rp(url, function(error, response, body) {
+                                if (!error && response != undefined) {
+                                    var response = JSON.parse(body);
 
-                    rp(url, function(error, response, body) {
-                            if (!error && response != undefined) {
-                                var response = JSON.parse(body);
+                                    var occupancies = response;
+                                    var occupancyArray = []
 
-                                var occupancies = response;
-                                var occupancyArray = []
+                                    for (var i = 0; i < occupancies.length; i++) {
+                                        if (occupancies[i].settings.geoTrackingEnabled == true && self.occupancyEnabled == true) {
 
-                                for (var i = 0; i < occupancies.length; i++) {
-                                    if (occupancies[i].settings.geoTrackingEnabled == true && self.occupancyEnabled == true) {
+                                            toConfig = {
+                                                name: occupancies[i].name,
+                                                id: occupancies[i].id,
+                                                homeID: self.homeID,
+                                                username: self.username,
+                                                password: self.password
+                                            }
 
+                                            self.log("Found new User: " + toConfig.name)
+                                            occupancyArray.push(toConfig);
+
+                                        }
+                                    }
+
+                                    if (occupancyArray.length > 0 && self.occupancyEnabled == true) {
                                         toConfig = {
-                                            name: occupancies[i].name,
-                                            id: occupancies[i].id,
+                                            name: "Anyone",
+                                            id: 999999,
                                             homeID: self.homeID,
                                             username: self.username,
                                             password: self.password
                                         }
 
-                                        self.log("Found new User: " + toConfig.name)
+                                        self.log("Adding ANYONE sensor");
                                         occupancyArray.push(toConfig);
-
-                                    }
-                                }
-
-                                if (occupancyArray.length > 0 && self.occupancyEnabled == true) {
-                                    toConfig = {
-                                        name: "Anyone",
-                                        id: 999999,
-                                        homeID: self.homeID,
-                                        username: self.username,
-                                        password: self.password
                                     }
 
-                                    self.log("Adding ANYONE sensor");
-                                    occupancyArray.push(toConfig);
+                                    next(null, occupancyArray)
                                 }
+                            })
+                            .on('error', function(err) {
+                                self.log("Users Error: " + err.message);
+                                setTimeout(function() {
+                                    fetchOccupancy(next)
+                                }, 10000)
+                            });
 
-                                next(null, occupancyArray)
-                            }
-                        })
-                        .on('error', function(err) {
-                            self.log("Users Error: " + err.message);
-                            setTimeout(function() {
-                                fetchOccupancy(next)
-                            }, 10000)
-                        });
+                    } else {
+                        var occupancyArray;
+                        next(null, occupancyArray)
+                    }
 
                 }
                 fetchOccupancy(next)
@@ -411,56 +424,59 @@ TadoThermostatPlatform.prototype = {
 
                 function fetchWindows(next) {
 
-                    if (self.windowDetection == true) {
+                    if (self.windowDetection) {
 
                         self.log("Getting Windows...")
 
-                    }
+                        var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones?username=" + self.username + "&password=" + self.password;
 
-                    var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones?username=" + self.username + "&password=" + self.password;
+                        rp(url, function(error, response, body) {
+                                if (!error && response != undefined) {
+                                    var response = JSON.parse(body);
 
-                    rp(url, function(error, response, body) {
-                            if (!error && response != undefined) {
-                                var response = JSON.parse(body);
+                                    var windows = response;
+                                    var windowArray = []
 
-                                var windows = response;
-                                var windowArray = []
+                                    for (var i = 0; i < windows.length; i++) {
+                                        if (windows[i].openWindowDetection.supported == true && self.windowDetection == true) {
 
-                                for (var i = 0; i < windows.length; i++) {
-                                    if (windows[i].openWindowDetection.supported == true && self.windowDetection == true) {
+                                            if (windows[i].openWindowDetection.enabled == true) {
 
-                                        if (windows[i].openWindowDetection.enabled == true) {
+                                                toConfig = {
+                                                    name: windows[i].name + " Window",
+                                                    homeID: self.homeID,
+                                                    zoneID: windows[i].id,
+                                                    username: self.username,
+                                                    password: self.password,
+                                                    timeout: windows[i].openWindowDetection.timeoutInSeconds
+                                                }
 
-                                            toConfig = {
-                                                name: windows[i].name + " Window",
-                                                homeID: self.homeID,
-                                                zoneID: windows[i].id,
-                                                username: self.username,
-                                                password: self.password,
-                                                timeout: windows[i].openWindowDetection.timeoutInSeconds
+                                                self.log("Found new window: " + toConfig.name)
+                                                windowArray.push(toConfig);
+
+                                            } else {
+
+                                                self.log(windows[i].name + ": Please activate Open weather detection in your Tado app!")
+
                                             }
 
-                                            self.log("Found new window: " + toConfig.name)
-                                            windowArray.push(toConfig);
-
-                                        } else {
-
-                                            self.log(windows[i].name + ": Please activate Open weather detection in your Tado app!")
-
                                         }
-
                                     }
-                                }
 
-                                next(null, windowArray)
-                            }
-                        })
-                        .on('error', function(err) {
-                            self.log("Windows Error: " + err.message);
-                            setTimeout(function() {
-                                fetchWindows(next)
-                            }, 10000)
-                        });
+                                    next(null, windowArray)
+                                }
+                            })
+                            .on('error', function(err) {
+                                self.log("Windows Error: " + err.message);
+                                setTimeout(function() {
+                                    fetchWindows(next)
+                                }, 10000)
+                            });
+
+                    } else {
+                        var windowArray;
+                        next(null, windowArray)
+                    }
 
                 }
                 fetchWindows(next)
