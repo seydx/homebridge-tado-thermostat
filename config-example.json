@@ -18,7 +18,9 @@
         "weatherServiceEnabled":false,
         "occupancyEnabled":false,
         "windowDetection":false,
-        "centralSwitch": false
+        "centralSwitch": false,
+        "weatherAPI":"XXXXXXXXXXXXXX",
+        "weatherLocation":"Berlin"
    }
  ]
 }
