@@ -285,7 +285,7 @@ class USER {
         var totallength = self.historyService.history.length - 1;
         var latestTime = self.historyService.history[totallength].time;
 
-        if (self.state == true) {
+        if (self.state == 1) {
 
             var last = moment().unix();
             callback(null, last)
