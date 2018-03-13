@@ -68,11 +68,25 @@ class BOILER {
         this.Thermostat = new Service.Thermostat(this.displayName);
 
         this.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState)
-            .updateValue(this.currentstate);
+            .updateValue(this.currentstate)
+            .setProps({
+                format: Characteristic.Formats.UINT8,
+                maxValue: 1,
+                minValue: 0,
+                validValues: [0, 1],
+                perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+            });
 
         this.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState)
             .updateValue(this.targetstate)
-            .on('set', this.setTargetHeatingCoolingState.bind(this));
+            .on('set', this.setTargetHeatingCoolingState.bind(this))
+            .setProps({
+                format: Characteristic.Formats.UINT8,
+                maxValue: 3,
+                minValue: 0,
+                validValues: [0, 1, 2, 3],
+                perms: [Characteristic.Perms.READ, Characteristic.Perms.WRITE, Characteristic.Perms.NOTIFY]
+            });
 
         this.Thermostat.getCharacteristic(Characteristic.CurrentTemperature)
             .setProps({
@@ -143,10 +157,6 @@ class BOILER {
                             self.targettemp = result.setting.temperature.fahrenheit;
                         }
 
-                        if (self.currenttemp != null || self.currenttemp != undefined) {
-                            self.storage.setItem("TadoTemp", self.currenttemp);
-                        }
-
                         if (result.overlayType == null) {
 
                             self.currentstate = 0;
@@ -156,7 +166,11 @@ class BOILER {
 
                             self.currentstate = 1;
                             self.targetstate = 1;
-                            
+
+                        }
+
+                        if (self.currenttemp != null || self.currenttemp != undefined) {
+                            self.storage.setItem("TadoTemp", self.currenttemp);
                         }
 
                     } else {
@@ -164,13 +178,10 @@ class BOILER {
                         self.currentstate = 0;
                         self.targetstate = 0;
 
-                        var getTempStorage = self.storage.getItem("TadoTemp");
-                        if (getTempStorage == null || getTempStorage == undefined) {
+                        if (self.storage.getItem("TadoTemp") == null || self.storage.getItem("TadoTemp") == undefined) {
                             self.currenttemp = 0;
-                            self.targettemp = 0;
                         } else {
-                            self.currenttemp = self.storage.getItem("TadoTemp")
-                            self.targettemp = self.storage.getItem("TadoTemp")
+                            self.currenttemp = self.storage.getItem("TadoTemp");
                         }
 
                     }
@@ -227,15 +238,13 @@ class BOILER {
         switch (state) {
             case Characteristic.TargetHeatingCoolingState.OFF:
 
-                var onOff = "OFF"
-
                 rp({
                         url: url,
                         method: 'PUT',
                         json: {
                             "setting": {
                                 "type": "HOT_WATER",
-                                "power": onOff
+                                "power": "OFF"
                             },
                             "termination": {
                                 "type": "MANUAL"
@@ -254,8 +263,7 @@ class BOILER {
                 break;
 
             case Characteristic.TargetHeatingCoolingState.HEAT:
-
-                var onOff = "ON"
+            
                 var setTemp = self.currenttemp + self.heatValue;
 
                 rp({
@@ -264,7 +272,7 @@ class BOILER {
                         json: {
                             "setting": {
                                 "type": "HOT_WATER",
-                                "power": onOff,
+                                "power": "ON",
                                 "temperature": {
                                     "celsius": setTemp
                                 }
@@ -286,8 +294,7 @@ class BOILER {
                 break;
 
             case Characteristic.TargetHeatingCoolingState.COOL:
-
-                var onOff = "ON"
+            
                 var setTemp = self.currenttemp - self.coolValue;
 
                 rp({
@@ -296,7 +303,7 @@ class BOILER {
                         json: {
                             "setting": {
                                 "type": "HOT_WATER",
-                                "power": onOff,
+                                "power": "ON",
                                 "temperature": {
                                     "celsius": setTemp
                                 }
