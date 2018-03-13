@@ -250,6 +250,7 @@ class BOILER {
                                 "type": "MANUAL"
                             }
                         }
+
                     })
                     .on('response', function(res) {
                         self.log(self.displayName + ": Switched OFF");
@@ -263,8 +264,10 @@ class BOILER {
                 break;
 
             case Characteristic.TargetHeatingCoolingState.HEAT:
-            
+
                 var setTemp = self.currenttemp + self.heatValue;
+
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
 
                 rp({
                         url: url,
@@ -281,6 +284,7 @@ class BOILER {
                                 "type": "MANUAL"
                             }
                         }
+
                     })
                     .on('response', function(res) {
                         self.log(self.displayName + ": Switched to HEAT");
@@ -294,7 +298,9 @@ class BOILER {
                 break;
 
             case Characteristic.TargetHeatingCoolingState.COOL:
-            
+
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
+
                 var setTemp = self.currenttemp - self.coolValue;
 
                 rp({
