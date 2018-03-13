@@ -360,15 +360,13 @@ class BOILER {
             callback()
         } else {
 
-            var onOff = "ON"
-
             rp({
                     url: url,
                     method: 'PUT',
                     json: {
                         "setting": {
                             "type": "HOT_WATER",
-                            "power": onOff,
+                            "power": "ON",
                             "temperature": {
                                 "celsius": value
                             }
