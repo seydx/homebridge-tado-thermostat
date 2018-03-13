@@ -258,7 +258,7 @@ TadoThermostatPlatform.prototype = {
                                     var boilerArray = []
 
                                     for (var i = 0; i < zones.length; i++) {
-                                        if (zones[i].type.match("HEATING")) {
+                                        if (zones[i].type.match("HOT_WATER")) {
 
                                             var devices = zones[i].devices;
                                             var zonename = zones[i].name;
@@ -267,7 +267,7 @@ TadoThermostatPlatform.prototype = {
 
                                                 devices.length > 1 ? zonename = zones[i].name + " " + j : zonename = zones[i].name;
 
-                                                if (devices[j].deviceType.match("VA01")) {
+                                                if (devices[j].deviceType.match("BU01")) {
 
                                                     toConfig = {
                                                         name: zonename + " Hot Water",
