@@ -36,7 +36,7 @@ class BOILER {
         this.targetMaxValue = config.targetMaxValue;
         this.serialNo = config.serialNo;
         this.delaytimer = config.delaytimer;
-        
+
         !this.currenttemp ? this.currenttemp = 0 : this.currenttemp;
         !this.targettemp ? this.targettemp = 0 : this.targettemp;
         !this.currentstate ? this.currentstate = 0 : this.currentstate;
@@ -45,11 +45,11 @@ class BOILER {
         this.url_state = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/zones/" + this.zoneID + "/state?password=" + this.password +
             "&username=" + this.username;
-            
-	    this.storage = require('node-persist');
-	    this.storage.initSync({
-	        dir: platform.api.user.persistPath()
-	    });
+
+        this.storage = require('node-persist');
+        this.storage.initSync({
+            dir: platform.api.user.persistPath()
+        });
 
     }
 
@@ -99,7 +99,7 @@ class BOILER {
             disableTimer: true,
             path: this.api.user.cachedAccessoryPath()
         });
-        
+
         this._updateThermostatValues();
 
         (function poll() {
@@ -134,7 +134,7 @@ class BOILER {
                 if (result.setting != undefined) {
 
                     if (result.setting.power == "ON") {
-	                    
+
                         self.currentstate = 0;
                         self.targetstate = 3;
 
@@ -145,9 +145,9 @@ class BOILER {
                             self.currenttemp = result.setting.temperature.fahrenheit;
                             self.targettemp = result.setting.temperature.fahrenheit;
                         }
-                        
-                        if(self.currenttemp != null || self.currenttemp != undefined){
-                        	self.storage.setItem("TadoTemp", self.currenttemp);
+
+                        if (self.currenttemp != null || self.currenttemp != undefined) {
+                            self.storage.setItem("TadoTemp", self.currenttemp);
                         }
 
                         if (result.overlayType == null) {
@@ -169,19 +169,19 @@ class BOILER {
                         }
 
                     } else {
-	                    
-	                    self.currentstate = 0;
-	                    self.targetstate = 0;
-	                          
-		                var getTempStorage = self.storage.getItem("TadoTemp");
-						if (getTempStorage == null || getTempStorage == undefined){
-	                        self.currenttemp = 0;
-	                        self.targettemp = 0;
-	                    } else {
-	                        self.currenttemp = self.storage.getItem("TadoTemp")
-	                        self.targettemp = self.storage.getItem("TadoTemp")
-	                    }
-                    
+
+                        self.currentstate = 0;
+                        self.targetstate = 0;
+
+                        var getTempStorage = self.storage.getItem("TadoTemp");
+                        if (getTempStorage == null || getTempStorage == undefined) {
+                            self.currenttemp = 0;
+                            self.targettemp = 0;
+                        } else {
+                            self.currenttemp = self.storage.getItem("TadoTemp")
+                            self.targettemp = self.storage.getItem("TadoTemp")
+                        }
+
                     }
 
                 }
