@@ -93,7 +93,9 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "occupancyEnabled": false,
     "windowDetection": false,
     "centralSwitch": false,
-    "boilerEnabled":false
+    "boilerEnabled":false,
+    "weatherAPI":"XXXXXXXXXXXXXXX",
+    "weatherLocation":"Berlin"
     }
   ]
 }
@@ -115,6 +117,8 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | delaytimer | No | Delay for setting the thermostat back in automatic mode (Default: 0 == not enabled) |
 | weatherEnabled | No | Exposes temperature sensors for your location based on tado (Default: false) | |
 | weatherServiceEnabled | No | Enable Service to check for weather state, eg. cloudy, sunny, clear etc. Only with Elgato EVE app! (Default: false) |
+| weatherAPI | No | Openweather API Key for detailed weather information |
+| weatherLocation | No | Openweather Location for detailed weather information |
 | occupancyEnabled | No | Exposes occupancy/motion sensors for all registred persons (only if geotracking is enabled in tado! - Default: false) | 
 | windowDetection | No | Exposes window sensors for each room (only if open weather detection is enabled in tado! - Default: false) |
 | centralSwitch | No | Exposes a switch to turning on/off all thermostats with just one click! (Default: false) |
