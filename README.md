@@ -90,12 +90,12 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "delayTimer": 0,
     "weatherEnabled": true,
     "weatherServiceEnabled": false,
+    "weatherAPI":"XXXXXXXXXXXXXXX",
+    "weatherLocation":"Berlin",
     "occupancyEnabled": false,
     "windowDetection": false,
     "centralSwitch": false,
-    "boilerEnabled":false,
-    "weatherAPI":"XXXXXXXXXXXXXXX",
-    "weatherLocation":"Berlin"
+    "boilerEnabled":false
     }
   ]
 }
