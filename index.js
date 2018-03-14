@@ -53,6 +53,10 @@ function TadoThermostatPlatform(log, config, api) {
     this.weatherServiceEnabled = config["weatherServiceEnabled"] || false;
     this.weatherAPI = config["weatherAPI"] || "";
     this.weatherLocation = config["weatherLocation"] || "";
+    
+    if(this.weatherAPI != "" && this.weatherLocation != "" && weatherEnabled == false){
+        this.weatherEnabled = true;
+    }
 
     //Extras Config
     this.occupancyEnabled = config["occupancyEnabled"] || false;
