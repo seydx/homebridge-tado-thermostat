@@ -85,6 +85,8 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "name": "Thermostat",
     "username": "TadoUsername",
     "password": "TadoPassword",
+    "homeID":"123456",
+    "tempUnit":"CELSIUS",
     "heatValue": 5,
     "coolValue": 5,
     "delayTimer": 0,
