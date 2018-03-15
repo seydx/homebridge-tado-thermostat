@@ -19,21 +19,6 @@ class WEATHER {
         Service = api.hap.Service;
         Characteristic = api.hap.Characteristic;
 
-        AirPressure = function() {
-            Characteristic.call(this, "Air Pressure", "E863F10F-079E-48FF-8F27-9C2605A29F52");
-            this.setProps({
-                format: Characteristic.Formats.UINT16,
-                unit: "mBar",
-                maxValue: 1100,
-                minValue: 700,
-                minStep: 1,
-                perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
-            });
-            this.value = this.getDefaultValue();
-        };
-        inherits(AirPressure, Characteristic);
-        AirPressure.UUID = "E863F10F-079E-48FF-8F27-9C2605A29F52";
-
         var platform = this;
 
         this.api = api;
@@ -55,8 +40,25 @@ class WEATHER {
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/weather?password=" + this.password +
             "&username=" + this.username;
+            
+        if (this.weatherAPI != "" && this.weatherAPI != undefined && this.weatherAPI != null && this.weatherLocation != "" && this.weatherLocation != undefined && this.weatherLocation != null) {
+	        AirPressure = function() {
+	            Characteristic.call(this, "Air Pressure", "E863F10F-079E-48FF-8F27-9C2605A29F52");
+	            this.setProps({
+	                format: Characteristic.Formats.UINT16,
+	                unit: "mBar",
+	                maxValue: 1100,
+	                minValue: 700,
+	                minStep: 1,
+	                perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+	            });
+	            this.value = this.getDefaultValue();
+	        };
+	        inherits(AirPressure, Characteristic);
+	        AirPressure.UUID = "E863F10F-079E-48FF-8F27-9C2605A29F52";
+        }
 
-        if (this.weatherAPI && this.weatherLocation) {
+        if (this.weatherAPI != "" && this.weatherAPI != undefined && this.weatherAPI != null && this.weatherLocation != "" && this.weatherLocation != undefined && this.weatherLocation != null) {
             if (this.tempUnit == "CELSIUS") {
                 this.url_weather = "http://api.openweathermap.org/data/2.5/weather?q=" + this.weatherLocation + "&appid=" + this.weatherAPI + "&units=metric";
             } else {
@@ -80,7 +82,7 @@ class WEATHER {
 
         this.Weather = new Service.TemperatureSensor(this.name);
 
-        if (this.weatherAPI && this.weatherLocation) {
+        if (this.weatherAPI != "" && this.weatherAPI != undefined && this.weatherAPI != null && this.weatherLocation != "" && this.weatherLocation != undefined && this.weatherLocation != null) {
 
             this.Weather.addCharacteristic(Characteristic.CurrentRelativeHumidity)
             this.Weather.getCharacteristic(Characteristic.CurrentRelativeHumidity)
@@ -112,7 +114,10 @@ class WEATHER {
         });
 
         this.getCurrentTemperature();
-        this.getCurrentRelativeHumidity();
+        
+        if (this.weatherAPI != "" && this.weatherAPI != undefined && this.weatherAPI != null && this.weatherLocation != "" && this.weatherLocation != undefined && this.weatherLocation != null) {
+			this.getOpenWeatherData();
+        }
 
         (function poll() {
             setTimeout(function() {
@@ -163,7 +168,7 @@ class WEATHER {
 
     }
 
-    getCurrentRelativeHumidity() {
+    getOpenWeatherData() {
 
         var self = this;
 
@@ -207,6 +212,11 @@ class WEATHER {
     getHistory() {
 
         var self = this;
+        
+        if (self.weatherAPI == "" || self.weatherAPI == undefined || self.weatherAPI == null || self.weatherLocation == "" || self.weatherLocation == undefined || self.weatherLocation == null) {
+			self.pressure = 0;
+			self.humidity = 0;
+        }
 
         self.historyService.addEntry({
             time: moment().unix(),
