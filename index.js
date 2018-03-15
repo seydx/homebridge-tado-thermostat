@@ -53,10 +53,6 @@ function TadoThermostatPlatform(log, config, api) {
     this.weatherServiceEnabled = config["weatherServiceEnabled"] || false;
     this.weatherAPI = config["weatherAPI"] || "";
     this.weatherLocation = config["weatherLocation"] || "";
-    
-    if(this.weatherAPI != "" && this.weatherLocation != "" && weatherEnabled == false){
-        this.weatherEnabled = true;
-    }
 
     //Extras Config
     this.occupancyEnabled = config["occupancyEnabled"] || false;
@@ -153,6 +149,19 @@ TadoThermostatPlatform.prototype = {
                     } else {
 
                         self.log("Temperature Unit found in config. Unit: " + self.tempUnit);
+                        
+                        if (self.tempUnit = "CELSIUS") {
+                            self.targetMinValue = 5;
+                            self.targetMaxValue = 25;
+                            self.targetMinBoilerValue = 30;
+                            self.targetMaxBoilerValue = 65;
+                        } else {
+                            self.targetMinValue = 41;
+                            self.targetMaxValue = 77;
+                            self.targetMinBoilerValue = 86;
+                            self.targetMaxBoilerValue = 149;
+                        }
+                        
                         next()
 
                     }
