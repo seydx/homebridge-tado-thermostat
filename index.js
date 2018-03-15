@@ -41,7 +41,7 @@ function TadoThermostatPlatform(log, config, api) {
     //Thermostat Config
     this.coolValue = config["coolValue"] || 4;
     this.heatValue = config["heatValue"] || 4;
-    this.delaytimer = (config["delaytimer"] * 1000);
+    this.delaytimer = (config["delaytimer"] * 1000) || 0;
 
     //Boiler Config
     this.boilerEnabled = config["boilerEnabled"] || false;
@@ -73,7 +73,7 @@ TadoThermostatPlatform.prototype = {
             function(next) {
                 function fetchHomeID(next) {
 
-                    if (!self.homeID || self.homeID == "" || self.homeID == undefined) {
+                    if (!self.homeID || self.homeID == "" || self.homeID == undefined || self.homeID == null) {
 
                         self.log("Getting HomeID...")
 
@@ -149,19 +149,26 @@ TadoThermostatPlatform.prototype = {
                     } else {
 
                         self.log("Temperature Unit found in config. Unit: " + self.tempUnit);
-                        
+
                         if (self.tempUnit = "CELSIUS") {
                             self.targetMinValue = 5;
                             self.targetMaxValue = 25;
                             self.targetMinBoilerValue = 30;
                             self.targetMaxBoilerValue = 65;
-                        } else {
+                        } else if (self.tempUnit = "FAHRENHEIT") {
                             self.targetMinValue = 41;
                             self.targetMaxValue = 77;
                             self.targetMinBoilerValue = 86;
                             self.targetMaxBoilerValue = 149;
+                        } else {
+                            self.log("Cant recognize Temperature Unit! Setting it to CELSIUS!")
+                            self.tempUnit = "CELSIUS";
+                            self.targetMinValue = 5;
+                            self.targetMaxValue = 25;
+                            self.targetMinBoilerValue = 30;
+                            self.targetMaxBoilerValue = 65;
                         }
-                        
+
                         next()
 
                     }
