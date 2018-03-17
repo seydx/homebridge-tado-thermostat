@@ -1,6 +1,4 @@
-var rp = require("request"),
-    inherits = require("util").inherits,
-    pollingtoevent = require("polling-to-event");
+var inherits = require("util").inherits;
 
 var Accessory,
     Service,
@@ -40,12 +38,36 @@ class WEATHERSERVICE {
         this.homeID = config.homeID;
         this.username = config.username;
         this.password = config.password;
+        this.interval = config.interval;
 
         !this.weather ? this.weather = "" : this.weather;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/weather?password=" + this.password +
             "&username=" + this.username;
+
+        this.getContent = function(url) {
+
+            return new Promise((resolve, reject) => {
+
+                const lib = url.startsWith('https') ? require('https') : require('http');
+
+                const request = lib.get(url, (response) => {
+
+                    if (response.statusCode < 200 || response.statusCode > 299) {
+                        reject(new Error('Failed to load data, status code: ' + response.statusCode));
+                    }
+
+                    const body = [];
+                    response.on('data', (chunk) => body.push(chunk));
+                    response.on('end', () => resolve(body.join('')));
+                });
+
+                request.on('error', (err) => reject(err))
+
+            })
+
+        };
 
     }
 
@@ -75,33 +97,22 @@ class WEATHERSERVICE {
 
         var self = this;
 
-        var emitter = pollingtoevent(function(done) {
-            rp.get(self.url, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 15 * 60 * 1000
-        });
-
-        emitter
-            .on("poll", function(data) {
-
+        self.getContent(self.url)
+            .then((data) => {
                 var result = JSON.parse(data);
                 self.weather = result.weatherState.value;
 
-                self.weatherService.getCharacteristic(WeatherCharacteristic)
-                    .updateValue(self.weather);
-
-            })
-            .on("error", function(err) {
-                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
-                self.weatherService.getCharacteristic(WeatherCharacteristic)
-                    .updateValue(self.weather);
-                emitter.pause();
+                self.weatherService.getCharacteristic(WeatherCharacteristic).updateValue(self.weather);
                 setTimeout(function() {
-                    emitter.resume();
-                }, 10000)
+                    self.getCurrentWeatherState();
+                }, self.interval)
+            })
+            .catch((err) => {
+                self.log(self.name + ": " + err + " - Trying again");
+                self.weatherService.getCharacteristic(WeatherCharacteristic).updateValue(self.weather);
+                setTimeout(function() {
+                    self.getCurrentWeatherState();
+                }, 15000)
             });
 
     }
