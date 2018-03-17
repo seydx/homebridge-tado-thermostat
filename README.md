@@ -17,7 +17,7 @@ This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sens
 - Delay timer: You can set up a timer as delay for your thermostats to wait a certain time to go back to the automatic mode (Helpful in automations where you shut off the thermostat after window is opened and in automatic mode if window is closed. So this timer let the thermostat wait a certain time in off mode before going back to auto mode. Helpful if you open the window only for a few minutes)
 - Elgato EVE history feature (Fakegato)
 
-**Boiler: (Experimental)**
+**Boiler:**
 - Expose Tado Hot Water to Apple HomeKit!
 - Additional modes: Heat, Cool, Auto and Off
 - Auto heat/cool to a certain value (configurable in config.json)
@@ -141,7 +141,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Weather State Service
 - [x] Central switch to put all thermostats in off/on mode
 - [x] Better error handling
-- [x] Hot Water (experimental, testing)
+- [x] Hot Water
 - [x] Weather information like pressure, humidity etc.
 - [x] Clear dependencies
 - [ ] Add DEBUG (in work)
