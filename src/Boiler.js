@@ -1,5 +1,6 @@
 var moment = require('moment'),
-    inherits = require("util").inherits;
+    inherits = require("util").inherits,
+    https = require('https');
 
 var Accessory,
     Service,
