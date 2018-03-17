@@ -1,6 +1,4 @@
 var moment = require('moment'),
-    rp = require("request"),
-    pollingtoevent = require("polling-to-event"),
     inherits = require("util").inherits;
 
 var Accessory,
@@ -81,12 +79,36 @@ class USER {
         this.username = config.username;
         this.password = config.password;
         this.userID = config.id;
+        this.interval = config.interval;
 
         !this.state ? this.state = 0 : this.state;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/mobileDevices?password=" + this.password +
             "&username=" + this.username;
+
+        this.getContent = function(url) {
+
+            return new Promise((resolve, reject) => {
+
+                const lib = url.startsWith('https') ? require('https') : require('http');
+
+                const request = lib.get(url, (response) => {
+
+                    if (response.statusCode < 200 || response.statusCode > 299) {
+                        reject(new Error('Failed to load data, status code: ' + response.statusCode));
+                    }
+
+                    const body = [];
+                    response.on('data', (chunk) => body.push(chunk));
+                    response.on('end', () => resolve(body.join('')));
+                });
+
+                request.on('error', (err) => reject(err))
+
+            })
+
+        };
 
     }
 
@@ -160,17 +182,8 @@ class USER {
 
         var self = this;
 
-        var emitter = pollingtoevent(function(done) {
-            rp.get(self.url, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 5000
-        });
-
-        emitter
-            .on("poll", function(data) {
+        self.getContent(self.url)
+            .then((data) => {
 
                 var result = JSON.parse(data);
 
@@ -185,25 +198,24 @@ class USER {
                                 self.state = 0;
                             }
 
-
                         }
 
                     }
 
                 }
 
-                self.Motion.getCharacteristic(Characteristic.MotionDetected)
-                    .updateValue(self.state);
+                self.Motion.getCharacteristic(Characteristic.MotionDetected).updateValue(self.state);
+                setTimeout(function() {
+                    self.getMotionDetected();
+                }, self.interval)
 
             })
-            .on("error", function(err) {
-                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
-                self.Motion.getCharacteristic(Characteristic.MotionDetected)
-                    .updateValue(self.state);
-                emitter.pause();
+            .catch((err) => {
+                self.log(self.name + ": " + err + " - Trying again");
+                self.Motion.getCharacteristic(Characteristic.MotionDetected).updateValue(self.state);
                 setTimeout(function() {
-                    emitter.resume();
-                }, 10000)
+                    self.getMotionDetected();
+                }, 15000)
             });
 
     }
@@ -212,17 +224,8 @@ class USER {
 
         var self = this;
 
-        var emitter = pollingtoevent(function(done) {
-            rp.get(self.url, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 5000
-        });
-
-        emitter
-            .on("poll", function(data) {
+        self.getContent(self.url)
+            .then((data) => {
 
                 var result = JSON.parse(data);
 
@@ -243,18 +246,18 @@ class USER {
                     self.state = 0
                 }
 
-                self.Motion.getCharacteristic(Characteristic.MotionDetected)
-                    .updateValue(self.state);
+                self.Motion.getCharacteristic(Characteristic.MotionDetected).updateValue(self.state);
+                setTimeout(function() {
+                    self.getAnyoneDetected();
+                }, self.interval)
 
             })
-            .on("error", function(err) {
-                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
-                self.Motion.getCharacteristic(Characteristic.MotionDetected)
-                    .updateValue(self.state);
-                emitter.pause();
+            .catch((err) => {
+                self.log(self.name + ": " + err + " - Trying again");
+                self.Motion.getCharacteristic(Characteristic.MotionDetected).updateValue(self.state);
                 setTimeout(function() {
-                    emitter.resume();
-                }, 10000)
+                    self.getAnyoneDetected();
+                }, 15000)
             });
 
     }
@@ -272,8 +275,6 @@ class USER {
                 time: moment().unix(),
                 status: self.state
             });
-
-            //self.log(self.name + ": New entry added to history! Old Status: " + latestStatus + " - New Status: " + self.state);
 
         }
 
