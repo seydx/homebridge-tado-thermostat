@@ -1,5 +1,5 @@
 var moment = require('moment'),
-    rp = require("request");
+    https = require('https');
 
 var Accessory,
     Service,
@@ -25,6 +25,30 @@ class SWITCH {
         this.password = config.password;
         this.roomids = JSON.parse(config.roomids);
         this.offstate = 0;
+        this.interval = config.interval + 2000;
+
+        this.getContent = function(url) {
+
+            return new Promise((resolve, reject) => {
+
+                const lib = url.startsWith('https') ? require('https') : require('http');
+
+                const request = lib.get(url, (response) => {
+
+                    if (response.statusCode < 200 || response.statusCode > 299) {
+                        reject(new Error('Failed to load data, status code: ' + response.statusCode));
+                    }
+
+                    const body = [];
+                    response.on('data', (chunk) => body.push(chunk));
+                    response.on('end', () => resolve(body.join('')));
+                });
+
+                request.on('error', (err) => reject(err))
+
+            })
+
+        };
 
     }
 
@@ -50,7 +74,7 @@ class SWITCH {
             setTimeout(function() {
                 accessory.Switch.getCharacteristic(Characteristic.On).getValue();
                 poll()
-            }, 5000)
+            }, accessory.interval)
         })();
 
         return [this.informationService, this.Switch];
@@ -63,20 +87,16 @@ class SWITCH {
 
         for (var i = 0; i < self.roomids.length; i++) {
 
-            var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/state?username=" + self.username + "&password=" + self.password
-
-            rp(url, function(error, response, body) {
-                    if (!error && response != undefined) {
-                        var response = JSON.parse(body);
-                        if (response.setting.power == "ON") {
-                            self.offstate += 1;
-                        }
-                    } else {
-                        self.offstate = 0;
+            self.getContent("https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/state?username=" + self.username + "&password=" + self.password)
+                .then((data) => {
+                    var response = JSON.parse(data);
+                    if (response.setting.power == "ON") {
+                        self.offstate += 1;
                     }
                 })
-                .on('error', function(err) {
-                    self.log("Error getting switch state: " + err.message);
+                .catch((err) => {
+                    self.log(self.name + ": " + err + " - Trying again");
+                    self.offstate = 0;
                 });
 
         }
@@ -99,15 +119,19 @@ class SWITCH {
 
             for (var i = 0; i < self.roomids.length; i++) {
 
-                var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/overlay?username=" + self.username + "&password=" + self.password
+                var options = {
+                    host: 'my.tado.com',
+                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/overlay?username=" + self.username + "&password=" + self.password,
+                    method: 'DELETE'
+                };
 
-                rp({
-                        url: url,
-                        method: 'DELETE'
-                    })
-                    .on('error', function(err) {
-                        self.log("ERROR: " + err.message);
+                var req = https.request(options, function(res) {
+                    req.on('error', function(err) {
+                        console.log('Error: ' + err);
                     });
+                });
+
+                req.end();
 
             }
 
@@ -119,24 +143,30 @@ class SWITCH {
 
             for (var i = 0; i < self.roomids.length; i++) {
 
-                var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/overlay?username=" + self.username + "&password=" + self.password
+                var options = {
+                    host: 'my.tado.com',
+                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/overlay?username=" + self.username + "&password=" + self.password,
+                    method: 'PUT'
+                };
 
-                rp({
-                        url: url,
-                        method: 'PUT',
-                        json: {
-                            "setting": {
-                                "type": "HEATING",
-                                "power": "OFF"
-                            },
-                            "termination": {
-                                "type": "MANUAL"
-                            }
-                        }
-                    })
-                    .on('error', function(err) {
-                        self.log("ERROR: " + err.message);
-                    })
+                var post_data = JSON.stringify({
+                    "setting": {
+                        "type": "HEATING",
+                        "power": "OFF"
+                    },
+                    "termination": {
+                        "type": "MANUAL"
+                    }
+                });
+
+                var req = https.request(options, function(res) {
+                    req.on('error', function(err) {
+                        console.log('Error: ' + err);
+                    });
+                });
+
+                req.write(post_data);
+                req.end();
 
             }
 
