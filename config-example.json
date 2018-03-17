@@ -23,7 +23,8 @@
         "occupancyEnabled":false,
         "windowDetection":false,
         "centralSwitch": false,
-        "interval": 10
+        "interval": 10,
+        "boilerType": "BU01"
    }
  ]
 }
