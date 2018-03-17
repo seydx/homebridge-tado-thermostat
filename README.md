@@ -98,6 +98,7 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "windowDetection": false,
     "centralSwitch": false,
     "boilerEnabled":false,
+    "boilerType": "BU01",
     "interval": 10
     }
   ]
@@ -126,7 +127,8 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | occupancyEnabled | No | Exposes occupancy/motion sensors for all registred persons (only if geotracking is enabled in tado! - Default: false) | 
 | windowDetection | No | Exposes window sensors for each room (only if open weather detection is enabled in tado! - Default: false) |
 | centralSwitch | No | Exposes a switch to turning on/off all thermostats with just one click! (Default: false) |
-| boilerEnabled | No | **EXPERIMENTAL!** Expose Tado Hot Water to HomeKit - Default: false) | 
+| boilerEnabled | No | Expose Tado Hot Water to HomeKit - Default: false) | 
+| boilerType | No | If the plugin don't expose Hot Water to HomeKit, try to change boilerType to "RU01" (Default: BU01) |
 | heatValueBoiler | No | Value for the BOILER "Heat" mode. Example: a value of 4 will heat up the Boiler to **Current Temperature + 10 degrees** (Default: 10) |
 | coolValueBoiler | No | Value for the BOILER "Cool" mode. Example: a value of 4 will cool down the Boiler to **Current Temperature - 10 degrees** (Default: 10) |
 
