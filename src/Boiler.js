@@ -92,7 +92,7 @@ class BOILER {
             .updateValue(this.currentstate)
             .setProps({
                 format: Characteristic.Formats.UINT8,
-                maxValue: 1,
+                maxValue: 3,
                 minValue: 0,
                 validValues: [0, 1, 2, 3],
                 perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
@@ -283,12 +283,6 @@ class BOILER {
 
             case Characteristic.TargetHeatingCoolingState.HEAT:
 
-                var options = {
-                    host: 'my.tado.com',
-                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'PUT'
-                };
-
                 var setTemp = self.currenttemp + self.heatValue;
 
                 if (self.tempUnit == "CELSIUS") {
@@ -296,14 +290,24 @@ class BOILER {
                         setTemp = 65;
                     } else if (setTemp < 30) {
                         setTemp = 30;
+                    } else {
+                        setTemp = self.currenttemp + self.heatValue;
                     }
                 } else {
                     if (setTemp > 149) {
                         setTemp = 149;
                     } else if (setTemp < 86) {
                         setTemp = 86;
+                    } else {
+                        setTemp = self.currenttemp + self.heatValue;
                     }
                 }
+
+                var options = {
+                    host: 'my.tado.com',
+                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
+                    method: 'PUT'
+                };
 
                 var post_data = JSON.stringify({
                     "setting": {
@@ -337,12 +341,6 @@ class BOILER {
 
             case Characteristic.TargetHeatingCoolingState.COOL:
 
-                var options = {
-                    host: 'my.tado.com',
-                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'PUT'
-                };
-
                 var setTemp = self.currenttemp - self.coolValue;
 
                 if (self.tempUnit == "CELSIUS") {
@@ -350,14 +348,24 @@ class BOILER {
                         setTemp = 65;
                     } else if (setTemp < 30) {
                         setTemp = 30;
+                    } else {
+                        setTemp = self.currenttemp - self.coolValue;
                     }
                 } else {
                     if (setTemp > 149) {
                         setTemp = 149;
                     } else if (setTemp < 86) {
                         setTemp = 86;
+                    } else {
+                        setTemp = self.currenttemp - self.coolValue;
                     }
                 }
+
+                var options = {
+                    host: 'my.tado.com',
+                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
+                    method: 'PUT'
+                };
 
                 var post_data = JSON.stringify({
                     "setting": {
@@ -383,7 +391,7 @@ class BOILER {
                 req.write(post_data);
                 req.end();
 
-                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(2);
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
 
                 callback()
 
@@ -436,7 +444,7 @@ class BOILER {
 
             var post_data = JSON.stringify({
                 "setting": {
-                    "type": "HEATING",
+                    "type": "HOT_WATER",
                     "power": "ON",
                     "temperature": {
                         "celsius": value
