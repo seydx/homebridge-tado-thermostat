@@ -1,6 +1,4 @@
 var moment = require('moment'),
-    rp = require("request"),
-    pollingtoevent = require("polling-to-event"),
     inherits = require("util").inherits;
 
 var Accessory,
@@ -32,6 +30,7 @@ class WEATHER {
         this.tempUnit = config.tempUnit;
         this.weatherAPI = config.weatherAPI;
         this.weatherLocation = config.weatherLocation;
+        this.interval = config.interval;
 
         !this.temp ? this.temp = 0 : this.temp;
         !this.humidity ? this.humidity = 0 : this.humidity;
@@ -40,22 +39,45 @@ class WEATHER {
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/weather?password=" + this.password +
             "&username=" + this.username;
-            
+
+        this.getContent = function(url) {
+
+            return new Promise((resolve, reject) => {
+
+                const lib = url.startsWith('https') ? require('https') : require('http');
+
+                const request = lib.get(url, (response) => {
+
+                    if (response.statusCode < 200 || response.statusCode > 299) {
+                        reject(new Error('Failed to load data, status code: ' + response.statusCode));
+                    }
+
+                    const body = [];
+                    response.on('data', (chunk) => body.push(chunk));
+                    response.on('end', () => resolve(body.join('')));
+                });
+
+                request.on('error', (err) => reject(err))
+
+            })
+
+        };
+
         if (this.weatherAPI != "" && this.weatherAPI != undefined && this.weatherAPI != null && this.weatherLocation != "" && this.weatherLocation != undefined && this.weatherLocation != null) {
-	        AirPressure = function() {
-	            Characteristic.call(this, "Air Pressure", "E863F10F-079E-48FF-8F27-9C2605A29F52");
-	            this.setProps({
-	                format: Characteristic.Formats.UINT16,
-	                unit: "mBar",
-	                maxValue: 1100,
-	                minValue: 700,
-	                minStep: 1,
-	                perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
-	            });
-	            this.value = this.getDefaultValue();
-	        };
-	        inherits(AirPressure, Characteristic);
-	        AirPressure.UUID = "E863F10F-079E-48FF-8F27-9C2605A29F52";
+            AirPressure = function() {
+                Characteristic.call(this, "Air Pressure", "E863F10F-079E-48FF-8F27-9C2605A29F52");
+                this.setProps({
+                    format: Characteristic.Formats.UINT16,
+                    unit: "mBar",
+                    maxValue: 1100,
+                    minValue: 700,
+                    minStep: 1,
+                    perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+                });
+                this.value = this.getDefaultValue();
+            };
+            inherits(AirPressure, Characteristic);
+            AirPressure.UUID = "E863F10F-079E-48FF-8F27-9C2605A29F52";
         }
 
         if (this.weatherAPI != "" && this.weatherAPI != undefined && this.weatherAPI != null && this.weatherLocation != "" && this.weatherLocation != undefined && this.weatherLocation != null) {
@@ -114,16 +136,16 @@ class WEATHER {
         });
 
         this.getCurrentTemperature();
-        
+
         if (this.weatherAPI != "" && this.weatherAPI != undefined && this.weatherAPI != null && this.weatherLocation != "" && this.weatherLocation != undefined && this.weatherLocation != null) {
-			this.getOpenWeatherData();
+            this.getOpenWeatherData();
         }
 
         (function poll() {
             setTimeout(function() {
                 self.getHistory();
                 poll();
-            }, 8 * 60 * 1000)
+            }, 10 * 60 * 1000)
         })();
 
         return [this.informationService, this.Weather, this.historyService];
@@ -134,36 +156,25 @@ class WEATHER {
 
         var self = this;
 
-        var emitter = pollingtoevent(function(done) {
-            rp.get(self.url, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 5 * 60 * 1000
-        });
-
-        emitter
-            .on("poll", function(data) {
-
+        self.getContent(self.url)
+            .then((data) => {
                 var result = JSON.parse(data);
 
                 self.tempUnit == "CELSIUS" ?
                     self.temp = result.outsideTemperature.celsius :
                     self.temp = result.outsideTemperature.fahrenheit;
 
-                self.Weather.getCharacteristic(Characteristic.CurrentTemperature)
-                    .updateValue(self.temp);
-
-            })
-            .on("error", function(err) {
-                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
-                self.Weather.getCharacteristic(Characteristic.CurrentTemperature)
-                    .updateValue(self.temp);
-                emitter.pause();
+                self.Weather.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.temp);
                 setTimeout(function() {
-                    emitter.resume();
-                }, 10000)
+                    self.getCurrentTemperature();
+                }, self.interval)
+            })
+            .catch((err) => {
+                self.log(self.name + ": " + err + " - Trying again");
+                self.Weather.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.temp);
+                setTimeout(function() {
+                    self.getCurrentTemperature();
+                }, 15000)
             });
 
     }
@@ -172,39 +183,26 @@ class WEATHER {
 
         var self = this;
 
-        var emitter = pollingtoevent(function(done) {
-            rp.get(self.url_weather, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 5 * 60 * 1000
-        });
-
-        emitter
-            .on("poll", function(data) {
-
+        self.getContent(self.url_weather)
+            .then((data) => {
                 var result = JSON.parse(data);
 
                 self.humidity = result.main.humidity;
                 self.pressure = result.main.pressure;
 
-                self.Weather.getCharacteristic(Characteristic.CurrentRelativeHumidity)
-                    .updateValue(self.humidity);
-                self.Weather.getCharacteristic(AirPressure)
-                    .updateValue(self.pressure);
-
-            })
-            .on("error", function(err) {
-                self.log(self.name + " Humidity/Air Pressure: An Error occured: %s", err.code + " - Polling again..");
-                self.Weather.getCharacteristic(Characteristic.CurrentRelativeHumidity)
-                    .updateValue(self.humidity);
-                self.Weather.getCharacteristic(AirPressure)
-                    .updateValue(self.pressure);
-                emitter.pause();
+                self.Weather.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(self.humidity);
+                self.Weather.getCharacteristic(AirPressure).updateValue(self.pressure);
                 setTimeout(function() {
-                    emitter.resume();
-                }, 10000)
+                    self.getOpenWeatherData();
+                }, self.interval)
+            })
+            .catch((err) => {
+                self.log(self.name + " EVE: " + err + " - Trying again");
+                self.Weather.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(self.humidity);
+                self.Weather.getCharacteristic(AirPressure).updateValue(self.pressure);
+                setTimeout(function() {
+                    self.getOpenWeatherData();
+                }, 15000)
             });
 
     }
@@ -212,10 +210,10 @@ class WEATHER {
     getHistory() {
 
         var self = this;
-        
+
         if (self.weatherAPI == "" || self.weatherAPI == undefined || self.weatherAPI == null || self.weatherLocation == "" || self.weatherLocation == undefined || self.weatherLocation == null) {
-			self.pressure = 0;
-			self.humidity = 0;
+            self.pressure = 0;
+            self.humidity = 0;
         }
 
         self.historyService.addEntry({
