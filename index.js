@@ -52,6 +52,7 @@ function TadoThermostatPlatform(log, config, api) {
     this.boilerEnabled = config["boilerEnabled"] || false;
     this.coolValueBoiler = config["coolValueBoiler"] || 10;
     this.heatValueBoiler = config["heatValueBoiler"] || 10;
+    this.boilerType = config["boilerType"] || "BU01";
 
     //Weather Config
     this.weatherEnabled = config["weatherEnabled"] || false;
@@ -330,7 +331,7 @@ TadoThermostatPlatform.prototype = {
 
                                             devices.length > 1 ? zonename = zones[i].name + " " + j : zonename = zones[i].name;
 
-                                            if (devices[j].deviceType.match("BU01")) {
+                                            if (devices[j].deviceType.match(self.boilerType)) {
 
                                                 toConfig = {
                                                     name: zonename + " Hot Water",
