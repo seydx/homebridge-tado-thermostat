@@ -22,7 +22,8 @@
         "weatherLocation":"Berlin",
         "occupancyEnabled":false,
         "windowDetection":false,
-        "centralSwitch": false
+        "centralSwitch": false,
+        "interval": 10
    }
  ]
 }
