@@ -1,6 +1,4 @@
-var moment = require('moment'),
-    rp = require("request"),
-    pollingtoevent = require("polling-to-event");
+var moment = require('moment');
 
 var Accessory,
     Service,
@@ -28,12 +26,36 @@ class WINDOW {
         this.username = config.username;
         this.password = config.password;
         this.timeout = config.timeout;
+        this.interval = config.interval + 6000;
 
         !this.state ? this.state = 0 : this.state;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/zones/" + this.zoneID + "/state?password=" + this.password +
             "&username=" + this.username;
+
+        this.getContent = function(url) {
+
+            return new Promise((resolve, reject) => {
+
+                const lib = url.startsWith('https') ? require('https') : require('http');
+
+                const request = lib.get(url, (response) => {
+
+                    if (response.statusCode < 200 || response.statusCode > 299) {
+                        reject(new Error('Failed to load data, status code: ' + response.statusCode));
+                    }
+
+                    const body = [];
+                    response.on('data', (chunk) => body.push(chunk));
+                    response.on('end', () => resolve(body.join('')));
+                });
+
+                request.on('error', (err) => reject(err))
+
+            })
+
+        };
 
     }
 
@@ -62,35 +84,23 @@ class WINDOW {
 
         var self = this;
 
-        var emitter = pollingtoevent(function(done) {
-            rp.get(self.url, function(err, req, data) {
-
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 5000
-        });
-
-        emitter
-            .on("poll", function(data) {
-
+        self.getContent(self.url)
+            .then((data) => {
                 var result = JSON.parse(data);
-
                 result.openWindow != null ? self.state = 1 : self.state = 0;
 
-                self.Window.getCharacteristic(Characteristic.ContactSensorState)
-                    .updateValue(self.state);
+                self.Window.getCharacteristic(Characteristic.ContactSensorState).updateValue(self.state);
 
-            })
-            .on("error", function(err) {
-                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
-                self.Window.getCharacteristic(Characteristic.ContactSensorState)
-                    .updateValue(self.state);
-                emitter.pause();
                 setTimeout(function() {
-                    emitter.resume();
-                }, 10000)
+                    self.getCurrentState();
+                }, self.interval)
+            })
+            .catch((err) => {
+                self.log(self.name + ": " + err + " - Trying again");
+                self.Window.getCharacteristic(Characteristic.ContactSensorState).updateValue(self.state);
+                setTimeout(function() {
+                    self.getCurrentState();
+                }, 15000)
             });
 
     }
