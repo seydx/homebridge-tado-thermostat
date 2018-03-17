@@ -97,7 +97,8 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "occupancyEnabled": false,
     "windowDetection": false,
     "centralSwitch": false,
-    "boilerEnabled":false
+    "boilerEnabled":false,
+    "interval": 10
     }
   ]
 }
@@ -112,6 +113,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | name | no | Name for the Thermostat. Will be used as part of the accessory name.  |
 | username | **Yes** | Tado Login Username |
 | password | **Yes** | Tado Login Password |
+| interval | No | Interval for polling state of accessories (Default: 10s) |
 | homeID | No | For faster loading (only by restarting HB), you can put your homeID in your config.json (Default: empty) |
 | tempUnit | No | For faster loading (only by restarting HB), you can put the Temperature Unit in your config.json (Default: empty - Valid values are: CELSIUS or FAHRENHEIT) |
 | heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to **Current Room Temperature + 4 degrees** (Default: 4) |
@@ -138,8 +140,9 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Central switch to put all thermostats in off/on mode
 - [x] Better error handling
 - [x] Hot Water (experimental, testing)
-- [ ] Add DEBUG (in work)
 - [x] Weather information like pressure, humidity etc.
+- [x] Clear dependencies
+- [ ] Add DEBUG (in work)
 - [ ] Dynamic Platform
 
 
