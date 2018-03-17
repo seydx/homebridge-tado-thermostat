@@ -1,6 +1,4 @@
 var moment = require('moment'),
-    rp = require("request"),
-    pollingtoevent = require("polling-to-event"),
     inherits = require("util").inherits;
 
 var Accessory,
@@ -35,6 +33,7 @@ class BOILER {
         this.targetMinValue = config.targetMinValue;
         this.targetMaxValue = config.targetMaxValue;
         this.serialNo = config.serialNo;
+        this.interval = config.interval + 2000;
 
         !this.currenttemp ? this.currenttemp = 0 : this.currenttemp;
         !this.targettemp ? this.targettemp = 0 : this.targettemp;
@@ -44,6 +43,29 @@ class BOILER {
         this.url_state = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/zones/" + this.zoneID + "/state?password=" + this.password +
             "&username=" + this.username;
+
+        this.getContent = function(url) {
+
+            return new Promise((resolve, reject) => {
+
+                const lib = url.startsWith('https') ? require('https') : require('http');
+
+                const request = lib.get(url, (response) => {
+
+                    if (response.statusCode < 200 || response.statusCode > 299) {
+                        reject(new Error('Failed to load data, status code: ' + response.statusCode));
+                    }
+
+                    const body = [];
+                    response.on('data', (chunk) => body.push(chunk));
+                    response.on('end', () => resolve(body.join('')));
+                });
+
+                request.on('error', (err) => reject(err))
+
+            })
+
+        };
 
         this.storage = require('node-persist');
         this.storage.initSync({
@@ -72,7 +94,7 @@ class BOILER {
                 format: Characteristic.Formats.UINT8,
                 maxValue: 1,
                 minValue: 0,
-                validValues: [0, 1],
+                validValues: [0, 1, 2, 3],
                 perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
             });
 
@@ -130,18 +152,8 @@ class BOILER {
 
         var self = this;
 
-        var emitter_state = pollingtoevent(function(done) {
-            rp.get(self.url_state, function(err, req, data) {
-                done(err, data);
-            });
-        }, {
-            longpolling: false,
-            interval: 5000
-        });
-
-        emitter_state
-            .on("poll", function(data) {
-
+        self.getContent(self.url_state)
+            .then((data) => {
                 var result = JSON.parse(data);
 
                 if (result.setting != undefined) {
@@ -158,7 +170,7 @@ class BOILER {
 
                         if (result.overlayType == null) {
 
-                            self.currentstate = 0;
+                            self.currentstate = 3;
                             self.targetstate = 3;
 
                         } else {
@@ -191,18 +203,19 @@ class BOILER {
                 self.Thermostat.getCharacteristic(Characteristic.TargetTemperature).updateValue(self.targettemp);
                 self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(self.currentstate);
                 self.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).updateValue(self.targetstate);
-
+                setTimeout(function() {
+                    self._updateThermostatValues();
+                }, self.interval)
             })
-            .on("error", function(err) {
-                self.log(self.name + ": An Error occured: %s", err.code + " - Polling again..");
+            .catch((err) => {
+                self.log(self.name + ": " + err + " - Trying again");
                 self.Thermostat.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.currenttemp);
                 self.Thermostat.getCharacteristic(Characteristic.TargetTemperature).updateValue(self.targettemp);
                 self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(self.currentstate);
                 self.Thermostat.getCharacteristic(Characteristic.TargetHeatingCoolingState).updateValue(self.targetstate);
-                emitter_state.pause();
                 setTimeout(function() {
-                    emitter_state.resume();
-                }, 10000)
+                    self._updateThermostatValues();
+                }, 15000)
             });
 
     }
@@ -232,31 +245,35 @@ class BOILER {
 
         var self = this;
 
-        var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password;
-
         switch (state) {
             case Characteristic.TargetHeatingCoolingState.OFF:
 
-                rp({
-                        url: url,
-                        method: 'PUT',
-                        json: {
-                            "setting": {
-                                "type": "HOT_WATER",
-                                "power": "OFF"
-                            },
-                            "termination": {
-                                "type": "MANUAL"
-                            }
-                        }
+                var options = {
+                    host: 'my.tado.com',
+                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
+                    method: 'PUT'
+                };
 
-                    })
-                    .on('response', function(res) {
-                        self.log(self.displayName + ": Switched OFF");
-                    })
-                    .on('error', function(err) {
-                        self.log(self.displayName + " - Error: " + err);
-                    })
+                var post_data = JSON.stringify({
+                    "setting": {
+                        "type": "HOT_WATER",
+                        "power": "OFF"
+                    },
+                    "termination": {
+                        "type": "MANUAL"
+                    }
+                });
+
+                var req = https.request(options, function(res) {
+                    self.log(self.displayName + ": Switched OFF");
+                });
+
+                req.on('error', function(err) {
+                    self.log(self.displayName + " - Error: " + err);
+                });
+
+                req.write(post_data);
+                req.end();
 
                 self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
 
@@ -265,6 +282,12 @@ class BOILER {
                 break;
 
             case Characteristic.TargetHeatingCoolingState.HEAT:
+
+                var options = {
+                    host: 'my.tado.com',
+                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
+                    method: 'PUT'
+                };
 
                 var setTemp = self.currenttemp + self.heatValue;
 
@@ -282,29 +305,29 @@ class BOILER {
                     }
                 }
 
-                rp({
-                        url: url,
-                        method: 'PUT',
-                        json: {
-                            "setting": {
-                                "type": "HOT_WATER",
-                                "power": "ON",
-                                "temperature": {
-                                    "celsius": setTemp
-                                }
-                            },
-                            "termination": {
-                                "type": "MANUAL"
-                            }
+                var post_data = JSON.stringify({
+                    "setting": {
+                        "type": "HOT_WATER",
+                        "power": "ON",
+                        "temperature": {
+                            "celsius": setTemp
                         }
+                    },
+                    "termination": {
+                        "type": "MANUAL"
+                    }
+                });
 
-                    })
-                    .on('response', function(res) {
-                        self.log(self.displayName + ": Switched to HEAT");
-                    })
-                    .on('error', function(err) {
-                        self.log(self.displayName + " - Error: " + err);
-                    })
+                var req = https.request(options, function(res) {
+                    self.log(self.displayName + ": Switched to HEAT");
+                });
+
+                req.on('error', function(err) {
+                    self.log(self.displayName + " - Error: " + err);
+                });
+
+                req.write(post_data);
+                req.end();
 
                 self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
 
@@ -313,6 +336,12 @@ class BOILER {
                 break;
 
             case Characteristic.TargetHeatingCoolingState.COOL:
+
+                var options = {
+                    host: 'my.tado.com',
+                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
+                    method: 'PUT'
+                };
 
                 var setTemp = self.currenttemp - self.coolValue;
 
@@ -330,30 +359,31 @@ class BOILER {
                     }
                 }
 
-                rp({
-                        url: url,
-                        method: 'PUT',
-                        json: {
-                            "setting": {
-                                "type": "HOT_WATER",
-                                "power": "ON",
-                                "temperature": {
-                                    "celsius": setTemp
-                                }
-                            },
-                            "termination": {
-                                "type": "MANUAL"
-                            }
+                var post_data = JSON.stringify({
+                    "setting": {
+                        "type": "HOT_WATER",
+                        "power": "ON",
+                        "temperature": {
+                            "celsius": setTemp
                         }
-                    })
-                    .on('response', function(res) {
-                        self.log(self.displayName + ": Switched to COOL");
-                    })
-                    .on('error', function(err) {
-                        self.log(self.displayName + " - Error: " + err);
-                    })
+                    },
+                    "termination": {
+                        "type": "MANUAL"
+                    }
+                });
 
-                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
+                var req = https.request(options, function(res) {
+                    self.log(self.displayName + ": Switched to COOL");
+                });
+
+                req.on('error', function(err) {
+                    self.log(self.displayName + " - Error: " + err);
+                });
+
+                req.write(post_data);
+                req.end();
+
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(2);
 
                 callback()
 
@@ -361,18 +391,23 @@ class BOILER {
 
             case Characteristic.TargetHeatingCoolingState.AUTO:
 
-                rp({
-                        url: url,
-                        method: 'DELETE'
-                    })
-                    .on('response', function(res) {
-                        self.log(self.displayName + ": Switched to AUTO");
-                    })
-                    .on('error', function(err) {
-                        self.log(self.displayName + " - Error: " + err);
-                    })
+                var options = {
+                    host: 'my.tado.com',
+                    path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
+                    method: 'DELETE'
+                };
 
-                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(0);
+                var req = https.request(options, function(res) {
+                    self.log(self.displayName + ": Switched to AUTO");
+                });
+
+                req.on('error', function(err) {
+                    self.log(self.displayName + " - Error: " + err);
+                });
+
+                req.end();
+
+                self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(3);
 
                 callback()
 
@@ -385,8 +420,6 @@ class BOILER {
 
         var self = this;
 
-        var url = "https://my.tado.com/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password;
-
         if (self.targetstate == 0) {
             self.log("Can't set new Temperature, Thermostat is off");
             callback()
@@ -395,28 +428,35 @@ class BOILER {
             callback()
         } else {
 
-            rp({
-                    url: url,
-                    method: 'PUT',
-                    json: {
-                        "setting": {
-                            "type": "HOT_WATER",
-                            "power": "ON",
-                            "temperature": {
-                                "celsius": value
-                            }
-                        },
-                        "termination": {
-                            "type": "MANUAL"
-                        }
+            var options = {
+                host: 'my.tado.com',
+                path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
+                method: 'PUT'
+            };
+
+            var post_data = JSON.stringify({
+                "setting": {
+                    "type": "HEATING",
+                    "power": "ON",
+                    "temperature": {
+                        "celsius": value
                     }
-                })
-                .on('response', function(res) {
-                    self.log(self.displayName + ": " + value);
-                })
-                .on('error', function(err) {
-                    self.log(self.displayName + " - Error: " + err);
-                })
+                },
+                "termination": {
+                    "type": "MANUAL"
+                }
+            });
+
+            var req = https.request(options, function(res) {
+                self.log(self.displayName + ": " + value);
+            });
+
+            req.on('error', function(err) {
+                self.log(self.displayName + " - Error: " + err);
+            });
+
+            req.write(post_data);
+            req.end();
 
             self.Thermostat.getCharacteristic(Characteristic.CurrentHeatingCoolingState).updateValue(1);
 
