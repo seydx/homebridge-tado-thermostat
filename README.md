@@ -129,8 +129,8 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | centralSwitch | No | Exposes a switch to turning on/off all thermostats with just one click! (Default: false) |
 | boilerEnabled | No | Expose Tado Hot Water to HomeKit - Default: false) | 
 | boilerType | No | If the plugin don't expose Hot Water to HomeKit, try to change boilerType to "RU01" (Default: BU01) |
-| heatValueBoiler | No | Value for the BOILER "Heat" mode. Example: a value of 4 will heat up the Boiler to **Current Temperature + 10 degrees** (Default: 10) |
-| coolValueBoiler | No | Value for the BOILER "Cool" mode. Example: a value of 4 will cool down the Boiler to **Current Temperature - 10 degrees** (Default: 10) |
+| heatValueBoiler | No | Value for the BOILER "Heat" mode. Example: a value of 10 will heat up the Boiler to **Current Temperature + 10 degrees** (Default: 10) |
+| coolValueBoiler | No | Value for the BOILER "Cool" mode. Example: a value of 10 will cool down the Boiler to **Current Temperature - 10 degrees** (Default: 10) |
 
 
 ## W.I.P features
