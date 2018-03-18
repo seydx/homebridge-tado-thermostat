@@ -5,7 +5,10 @@ var Accessory,
     Service,
     Characteristic,
     FakeGatoHistoryService,
-    AirPressure;
+    AirPressure,
+    WeatherCharacteristic,
+    Sunrise,
+    Sunset;
 
 class WEATHER {
 
@@ -35,6 +38,9 @@ class WEATHER {
         !this.temp ? this.temp = 0 : this.temp;
         !this.humidity ? this.humidity = 0 : this.humidity;
         !this.pressure ? this.pressure = 0 : this.pressure;
+        !this.weather ? this.weather = "" : this.weather;
+        !this.sunrise ? this.sunrise = "" : this.sunrise;
+        !this.sunset ? this.sunset = "" : this.sunset;
 
         this.url = "https://my.tado.com/api/v2/homes/" + this.homeID +
             "/weather?password=" + this.password +
@@ -68,7 +74,7 @@ class WEATHER {
                 Characteristic.call(this, "Air Pressure", "E863F10F-079E-48FF-8F27-9C2605A29F52");
                 this.setProps({
                     format: Characteristic.Formats.UINT16,
-                    unit: "mBar",
+                    unit: "hPa",
                     maxValue: 1100,
                     minValue: 700,
                     minStep: 1,
@@ -78,14 +84,46 @@ class WEATHER {
             };
             inherits(AirPressure, Characteristic);
             AirPressure.UUID = "E863F10F-079E-48FF-8F27-9C2605A29F52";
-        }
 
-        if (this.weatherAPI != "" && this.weatherAPI != undefined && this.weatherAPI != null && this.weatherLocation != "" && this.weatherLocation != undefined && this.weatherLocation != null) {
+            WeatherCharacteristic = function() {
+                Characteristic.call(this, "Weather", "896f41ad-ef68-4d74-ae34-bd2c6266129f");
+                this.setProps({
+                    format: Characteristic.Formats.STRING,
+                    perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+                });
+                this.value = this.getDefaultValue();
+            };
+            inherits(WeatherCharacteristic, Characteristic);
+            WeatherCharacteristic.UUID = "896f41ad-ef68-4d74-ae34-bd2c6266129f";
+
+            Sunrise = function() {
+                Characteristic.call(this, "Sunrise", "2a3f45d4-8191-4fc7-a102-359237c8a834");
+                this.setProps({
+                    format: Characteristic.Formats.STRING,
+                    perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+                });
+                this.value = this.getDefaultValue();
+            };
+            inherits(Sunrise, Characteristic);
+            Sunrise.UUID = "2a3f45d4-8191-4fc7-a102-359237c8a834";
+
+            Sunset = function() {
+                Characteristic.call(this, "Sunset", "f1dfeacb-2519-47d5-8608-cf453c2d7a74");
+                this.setProps({
+                    format: Characteristic.Formats.STRING,
+                    perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+                });
+                this.value = this.getDefaultValue();
+            };
+            inherits(Sunset, Characteristic);
+            Sunset.UUID = "f1dfeacb-2519-47d5-8608-cf453c2d7a74";
+
             if (this.tempUnit == "CELSIUS") {
                 this.url_weather = "http://api.openweathermap.org/data/2.5/weather?q=" + this.weatherLocation + "&appid=" + this.weatherAPI + "&units=metric";
             } else {
                 this.url_weather = "http://api.openweathermap.org/data/2.5/weather?q=" + this.weatherLocation + "&appid=" + this.weatherAPI + "&units=imperial";
             }
+
         }
 
     }
@@ -118,6 +156,18 @@ class WEATHER {
             this.Weather.addCharacteristic(AirPressure)
             this.Weather.getCharacteristic(AirPressure)
                 .updateValue(this.pressure);
+
+            this.Weather.addCharacteristic(WeatherCharacteristic);
+            this.Weather.getCharacteristic(WeatherCharacteristic)
+                .updateValue(this.weather);
+
+            this.Weather.addCharacteristic(Sunrise);
+            this.Weather.getCharacteristic(Sunrise)
+                .updateValue(this.sunrise);
+
+            this.Weather.addCharacteristic(Sunset);
+            this.Weather.getCharacteristic(Sunset)
+                .updateValue(this.sunset);
 
         }
 
@@ -174,7 +224,7 @@ class WEATHER {
                 self.Weather.getCharacteristic(Characteristic.CurrentTemperature).updateValue(self.temp);
                 setTimeout(function() {
                     self.getCurrentTemperature();
-                }, 15000)
+                }, 60000)
             });
 
     }
@@ -189,9 +239,15 @@ class WEATHER {
 
                 self.humidity = result.main.humidity;
                 self.pressure = result.main.pressure;
+                self.weather = result.weather[0].main;
+                self.sunrise = moment(result.sys.sunrise * 1000).format("HH:mm").toString();
+                self.sunset = moment(result.sys.sunset * 1000).format("HH:mm").toString();
 
                 self.Weather.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(self.humidity);
                 self.Weather.getCharacteristic(AirPressure).updateValue(self.pressure);
+                self.Weather.getCharacteristic(WeatherCharacteristic).updateValue(self.weather);
+                self.Weather.getCharacteristic(Sunrise).updateValue(self.sunrise);
+                self.Weather.getCharacteristic(Sunset).updateValue(self.sunset);
                 setTimeout(function() {
                     self.getOpenWeatherData();
                 }, self.interval)
@@ -200,9 +256,12 @@ class WEATHER {
                 self.log(self.name + " EVE: " + err + " - Trying again");
                 self.Weather.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(self.humidity);
                 self.Weather.getCharacteristic(AirPressure).updateValue(self.pressure);
+                self.Weather.getCharacteristic(WeatherCharacteristic).updateValue(self.weather);
+                self.Weather.getCharacteristic(Sunrise).updateValue(self.sunrise);
+                self.Weather.getCharacteristic(Sunset).updateValue(self.sunset);
                 setTimeout(function() {
                     self.getOpenWeatherData();
-                }, 15000)
+                }, 60000)
             });
 
     }
