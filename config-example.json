@@ -17,7 +17,6 @@
         "coolValue": 5,
         "delayTimer": 0,
         "weatherEnabled":false,
-        "weatherServiceEnabled":false,
         "weatherAPI":"XXXXXXXXXXXXXX",
         "weatherLocation":"Berlin",
         "occupancyEnabled":false,
