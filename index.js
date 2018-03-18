@@ -3,7 +3,6 @@ var async = require("async");
 var Tado_Thermostat = require('./src/Thermostat.js'),
     Tado_Boiler = require('./src/Boiler.js'),
     Tado_Weather = require('./src/Weather.js'),
-    Tado_WeatherService = require('./src/WeatherService.js'),
     Tado_Occupancy = require('./src/Occupancy.js'),
     Tado_Windows = require('./src/Window.js'),
     Tado_Switch = require('./src/Switch.js');
@@ -56,7 +55,6 @@ function TadoThermostatPlatform(log, config, api) {
 
     //Weather Config
     this.weatherEnabled = config["weatherEnabled"] || false;
-    this.weatherServiceEnabled = config["weatherServiceEnabled"] || false;
     this.weatherAPI = config["weatherAPI"] || "";
     this.weatherLocation = config["weatherLocation"] || "";
 
@@ -598,21 +596,6 @@ TadoThermostatPlatform.prototype = {
                     }
                     var weatherAccessory = new Tado_Weather(self.log, weatherConfig, self.api)
                     accessoriesArray.push(weatherAccessory);
-                }
-                next();
-            },
-
-            function(next) {
-                if (self.weatherServiceEnabled) {
-                    var weatherServiceConfig = {
-                        name: "Weather Service",
-                        homeID: self.homeID,
-                        username: self.username,
-                        password: self.password,
-                        interval: self.weatherServiceInterval
-                    }
-                    var weatherServiceAccessory = new Tado_WeatherService(self.log, weatherServiceConfig, self.api)
-                    accessoriesArray.push(weatherServiceAccessory);
                 }
                 next();
             },
