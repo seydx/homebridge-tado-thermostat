@@ -32,7 +32,7 @@ This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sens
 - If enabled in config.json, this plugin will create a weather sensor for your location based on tado.
 - Weather Service: If enabled in config.json, this plugin creates a Service to expose the current weather state (Sunny, Cloudy, Rainy etc.) to **Elgato EVE** app
 - Elgato EVE history feature (Fakegato)
-- OpenWeather Support: If API and Location setted in config, the Weather accessory will also show the current humidity state and Elgato EVE will also show the airpressure with FakeGato support! Note: You can get an API-Key from [openweathermap.org](https://openweathermap.org) - After sign up, you can create an API Key in the profile section
+- OpenWeather Support: If API and Location setted in config, the Weather accessory will also show the current humidity state and Elgato EVE will also show the airpressure, sunrise, sunset and weather state with FakeGato support! Note: You can get an API-Key from [openweathermap.org](https://openweathermap.org) - After sign up, you can create an API Key in the profile section
 
 **Window sensors:**
 - If enabled in config.json **AND** under the setting in the tado app (open window detection), this plugin creates windows sensors for each room.
@@ -91,7 +91,6 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "coolValue": 5,
     "delayTimer": 0,
     "weatherEnabled": true,
-    "weatherServiceEnabled": false,
     "weatherAPI":"XXXXXXXXXXXXXXX",
     "weatherLocation":"Berlin",
     "occupancyEnabled": false,
@@ -121,7 +120,6 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to **Current Room Temperature - 4 degrees** (Default: 4) |
 | delaytimer | No | Delay for setting the thermostat back in automatic mode (Default: 0 == not enabled) |
 | weatherEnabled | No | Exposes temperature sensors for your location based on tado (Default: false) | |
-| weatherServiceEnabled | No | Enable Service to check for weather state, eg. cloudy, sunny, clear etc. Only with Elgato EVE app! (Default: false) |
 | weatherAPI | No | Openweather API Key for detailed weather information |
 | weatherLocation | No | Openweather Location for detailed weather information |
 | occupancyEnabled | No | Exposes occupancy/motion sensors for all registred persons (only if geotracking is enabled in tado! - Default: false) | 
