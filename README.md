@@ -30,7 +30,6 @@ This homebridge plugin exposes Tado thermostats, occupancy sensors, weather sens
 
 **Weather sensors:**
 - If enabled in config.json, this plugin will create a weather sensor for your location based on tado.
-- Weather Service: If enabled in config.json, this plugin creates a Service to expose the current weather state (Sunny, Cloudy, Rainy etc.) to **Elgato EVE** app
 - Elgato EVE history feature (Fakegato)
 - OpenWeather Support: If API and Location setted in config, the Weather accessory will also show the current humidity state and Elgato EVE will also show the airpressure, sunrise, sunset and weather state with FakeGato support! Note: You can get an API-Key from [openweathermap.org](https://openweathermap.org) - After sign up, you can create an API Key in the profile section
 
