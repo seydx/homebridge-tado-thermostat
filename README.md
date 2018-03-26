@@ -65,7 +65,7 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "platform":"TadoThermostat",
     "name":"Thermostat",
     "username":"TadoUserName",
-    "password":"TadoPassword",
+    "password":"TadoPassword"
     }
   ]
 }
