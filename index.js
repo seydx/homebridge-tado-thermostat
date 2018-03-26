@@ -29,10 +29,11 @@ function TadoThermostatPlatform(log, config, api) {
 
     //Base Config
     this.name = config["name"] || "Tado";
-    this.username = config["username"];
+    this.username = encodeURIComponent(config["username"]);
     if (!config.username) throw new Error("Username is required!");
-    this.password = config["password"];
+    this.password = encodeURIComponent(config["password"]);
     if (!config.password) throw new Error("Password is required!");
+
     this.homeID = config["homeID"] || "";
     this.tempUnit = config["tempUnit"] || "";
 
