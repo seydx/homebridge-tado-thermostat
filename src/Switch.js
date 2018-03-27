@@ -1,5 +1,6 @@
 var moment = require('moment'),
-    https = require('https');
+    https = require('https'),
+    inherits = require("util").inherits;
 
 var Accessory,
     Service,
@@ -27,6 +28,10 @@ class SWITCH {
         this.offstate = 0;
         this.interval = config.interval + 2000;
 
+        !this.auto ? this.auto = 0 : this.auto;
+        !this.manual ? this.manual = 0 : this.manual;
+        !this.offline ? this.offline = 0 : this.offline;
+
         this.getContent = function(url) {
 
             return new Promise((resolve, reject) => {
@@ -50,6 +55,48 @@ class SWITCH {
 
         };
 
+        Characteristic.AutoThermostats = function() {
+            Characteristic.call(this, "Automatic", "12edece0-36c8-427f-895c-3b88ea186388");
+            this.setProps({
+                format: Characteristic.Formats.INT,
+                maxValue: 100,
+                minValue: 0,
+                minStep: 1,
+                perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+            });
+            this.value = this.getDefaultValue();
+        };
+        inherits(Characteristic.AutoThermostats, Characteristic);
+        Characteristic.AutoThermostats.UUID = "12edece0-36c8-427f-895c-3b88ea186388";
+
+        Characteristic.ManualThermostats = function() {
+            Characteristic.call(this, "Manual", "2be09385-4dc3-4438-9fee-b5b2e0642004");
+            this.setProps({
+                format: Characteristic.Formats.INT,
+                maxValue: 100,
+                minValue: 0,
+                minStep: 1,
+                perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+            });
+            this.value = this.getDefaultValue();
+        };
+        inherits(Characteristic.ManualThermostats, Characteristic);
+        Characteristic.ManualThermostats.UUID = "2be09385-4dc3-4438-9fee-b5b2e0642004";
+
+        Characteristic.OfflineThermostats = function() {
+            Characteristic.call(this, "Offline", "93131984-615c-401b-84ac-54e22db492c6");
+            this.setProps({
+                format: Characteristic.Formats.INT,
+                maxValue: 100,
+                minValue: 0,
+                minStep: 1,
+                perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+            });
+            this.value = this.getDefaultValue();
+        };
+        inherits(Characteristic.OfflineThermostats, Characteristic);
+        Characteristic.OfflineThermostats.UUID = "93131984-615c-401b-84ac-54e22db492c6";
+
     }
 
     getServices() {
@@ -69,6 +116,18 @@ class SWITCH {
         this.Switch.getCharacteristic(Characteristic.On)
             .on('get', this.getSwitch.bind(this))
             .on('set', this.setSwitch.bind(this));
+
+        this.Switch.addCharacteristic(Characteristic.AutoThermostats);
+        this.Switch.getCharacteristic(Characteristic.AutoThermostats)
+            .updateValue(this.auto);
+
+        this.Switch.addCharacteristic(Characteristic.ManualThermostats);
+        this.Switch.getCharacteristic(Characteristic.ManualThermostats)
+            .updateValue(this.manual);
+
+        this.Switch.addCharacteristic(Characteristic.OfflineThermostats);
+        this.Switch.getCharacteristic(Characteristic.OfflineThermostats)
+            .updateValue(this.offline);
 
         (function poll() {
             setTimeout(function() {
@@ -93,6 +152,15 @@ class SWITCH {
                     if (response.setting.power == "ON") {
                         self.offstate += 1;
                     }
+                    if (response.overlayType == null) {
+                        self.auto += 1;
+                    }
+                    if (response.setting.power == "OFF" && response.setting.temperature == null) {
+                        self.offline += 1;
+                    }
+                    if (response.overlayType == "MANUAL" && response.setting.temperature != null) {
+                        self.manual += 1;
+                    }
                 })
                 .catch((err) => {
                     self.log(self.name + ": " + err + " - Trying again");
@@ -101,7 +169,15 @@ class SWITCH {
 
         }
 
+        self.Switch.getCharacteristic(Characteristic.AutoThermostats).updateValue(self.auto);
+        self.Switch.getCharacteristic(Characteristic.ManualThermostats).updateValue(self.manual);
+        self.Switch.getCharacteristic(Characteristic.OfflineThermostats).updateValue(self.offline);
+        self.offline = 0;
+        self.auto = 0;
+        self.manual = 0;
+
         if (self.offstate == 0) {
+            self.log("OFFLINE");
             callback(null, false)
         } else {
             self.offstate = 0;
