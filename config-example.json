@@ -24,7 +24,8 @@
         "centralSwitch": false,
         "interval": 10,
         "boilerType": "BU01",
-        "includeTypes":["VA01", "RU01"]
+        "includeTypes":["VA01", "RU01"],
+        "onePerRoom":false
    }
  ]
 }
