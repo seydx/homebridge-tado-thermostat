@@ -98,7 +98,8 @@ After [Homebridge](https://github.com/nfarina/homebridge) has been installed:
     "boilerEnabled":false,
     "boilerType": "BU01",
     "interval": 10,
-    "includeTypes":["VA01", "RU01"]
+    "includeTypes":["VA01", "RU01"],
+    "onePerRoom":false
     }
   ]
 }
@@ -117,6 +118,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 | homeID | No | For faster loading (only by restarting HB), you can put your homeID in your config.json (Default: empty) |
 | tempUnit | No | For faster loading (only by restarting HB), you can put the Temperature Unit in your config.json (Default: empty - Valid values are: CELSIUS or FAHRENHEIT) |
 | includeTypes | No | If you want to restrict the plugin not to expose more accessory per room as need, you can add or remove the types from the includeTypes array. Types: VA01: heating thermostat, RU01: remote thermostat (Default: ["VA01", "RU01"]  |
+| onePerRoom | No | If true, the plugin will expose only one thermostat per room (Default: false) |
 | heatValue | No | Value for the "Heat" mode. Example: a value of 4 will heat up the room to **Current Room Temperature + 4 degrees** (Default: 4) |
 | coolValue | No | Value for the "Cool" mode. Example: a value of 4 will cool down the room to **Current Room Temperature - 4 degrees** (Default: 4) |
 | delaytimer | No | Delay for setting the thermostat back in automatic mode (Default: 0 == not enabled) |
@@ -143,6 +145,7 @@ See [Example Config](https://github.com/SeydX/homebridge-tado-thermostat/edit/ma
 - [x] Hot Water
 - [x] Weather information like pressure, humidity etc.
 - [x] Clear dependencies
+- [x] New options
 - [ ] Add DEBUG (in work)
 - [ ] Dynamic Platform
 
