@@ -36,11 +36,6 @@ function TadoThermostatPlatform(log, config, api) {
 
     this.homeID = config["homeID"] || "";
     this.tempUnit = config["tempUnit"] || "";
-    this.includeTypes = config["includeTypes"];
-    
-    if(!this.includeTypes){
-	    this.includeTypes = ["VA01", "RU01"]
-    }
 
     //Intervals
     this.interval = (config["interval"] * 1000) || 10000;
@@ -52,6 +47,11 @@ function TadoThermostatPlatform(log, config, api) {
     this.coolValue = config["coolValue"] || 4;
     this.heatValue = config["heatValue"] || 4;
     this.delaytimer = (config["delaytimer"] * 1000) || 0;
+    this.includeTypes = config["includeTypes"];
+    if (!this.includeTypes) {
+        this.includeTypes = ["VA01", "RU01"]
+    }
+    this.onePerRoom = config["onePerRoom"] || false;
 
     //Boiler Config
     this.boilerEnabled = config["boilerEnabled"] || false;
@@ -227,37 +227,60 @@ TadoThermostatPlatform.prototype = {
                                     var devices = zones[i].devices;
                                     var zonename = zones[i].name;
 
-                                    for (var j = 0; j < devices.length; j++) {
+                                    if (self.onePerRoom) {
 
-                                        devices.length > 1 ? zonename = zones[i].name + " " + j : zonename = zones[i].name;
-	                                        
-	                                    for(var l = 0; l < self.includeTypes.length;l++){
-		                                    
-		                                    if (devices[j].deviceType == self.includeTypes[l]) {
-		
-	                                            toConfig = {
-	                                                name: zonename,
-	                                                id: zones[i].id,
-	                                                homeID: self.homeID,
-	                                                username: self.username,
-	                                                password: self.password,
-	                                                coolValue: self.coolValue,
-	                                                heatValue: self.heatValue,
-	                                                tempUnit: self.tempUnit,
-	                                                targetMinValue: self.targetMinValue,
-	                                                targetMaxValue: self.targetMaxValue,
-	                                                serialNo: zones[i].devices[j].serialNo,
-	                                                delaytimer: self.delaytimer,
-	                                                interval: self.interval
-	                                            }
-	
-	                                            self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + " | " + devices[j].deviceType + ")")
-	                                            zonesArray.push(toConfig);
-			                                    
-		                                    }
-		                                    
-	                                    }    
-	                                    
+                                        toConfig = {
+                                            name: zonename,
+                                            id: zones[i].id,
+                                            homeID: self.homeID,
+                                            username: self.username,
+                                            password: self.password,
+                                            coolValue: self.coolValue,
+                                            heatValue: self.heatValue,
+                                            tempUnit: self.tempUnit,
+                                            targetMinValue: self.targetMinValue,
+                                            targetMaxValue: self.targetMaxValue,
+                                            serialNo: zones[i].devices[0].serialNo,
+                                            delaytimer: self.delaytimer,
+                                            interval: self.interval
+                                        }
+
+                                        self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + ")")
+                                        zonesArray.push(toConfig);
+
+                                    } else {
+                                        for (var j = 0; j < devices.length; j++) {
+
+                                            devices.length > 1 ? zonename = zones[i].name + " " + j : zonename = zones[i].name;
+
+                                            for (var l = 0; l < self.includeTypes.length; l++) {
+
+                                                if (devices[j].deviceType == self.includeTypes[l]) {
+
+                                                    toConfig = {
+                                                        name: zonename,
+                                                        id: zones[i].id,
+                                                        homeID: self.homeID,
+                                                        username: self.username,
+                                                        password: self.password,
+                                                        coolValue: self.coolValue,
+                                                        heatValue: self.heatValue,
+                                                        tempUnit: self.tempUnit,
+                                                        targetMinValue: self.targetMinValue,
+                                                        targetMaxValue: self.targetMaxValue,
+                                                        serialNo: zones[i].devices[j].serialNo,
+                                                        delaytimer: self.delaytimer,
+                                                        interval: self.interval
+                                                    }
+
+                                                    self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + " | " + devices[j].deviceType + ")")
+                                                    zonesArray.push(toConfig);
+
+                                                }
+
+                                            }
+
+                                        }
                                     }
 
                                 }
