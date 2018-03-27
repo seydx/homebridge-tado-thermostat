@@ -177,7 +177,6 @@ class SWITCH {
         self.manual = 0;
 
         if (self.offstate == 0) {
-            self.log("OFFLINE");
             callback(null, false)
         } else {
             self.offstate = 0;
