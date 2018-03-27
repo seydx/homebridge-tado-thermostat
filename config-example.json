@@ -23,7 +23,8 @@
         "windowDetection":false,
         "centralSwitch": false,
         "interval": 10,
-        "boilerType": "BU01"
+        "boilerType": "BU01",
+        "includeTypes":["VA01", "RU01"]
    }
  ]
 }
