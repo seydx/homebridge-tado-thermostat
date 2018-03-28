@@ -230,7 +230,7 @@ TadoThermostatPlatform.prototype = {
                                     if (self.onePerRoom) {
 
                                         toConfig = {
-                                            name: zonename,
+                                            name: zones[i].name,
                                             id: zones[i].id,
                                             homeID: self.homeID,
                                             username: self.username,
@@ -240,12 +240,27 @@ TadoThermostatPlatform.prototype = {
                                             tempUnit: self.tempUnit,
                                             targetMinValue: self.targetMinValue,
                                             targetMaxValue: self.targetMaxValue,
-                                            serialNo: zones[i].devices[0].serialNo,
                                             delaytimer: self.delaytimer,
                                             interval: self.interval
                                         }
 
-                                        self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + ")")
+                                        if (zones[i].deviceTypes.includes("RU01")) {
+                                            for (var j = 0; j < devices.length; j++) {
+                                                if (devices[j].deviceType == "RU01") {
+                                                    toConfig["serialNo"] = zones[i].devices[j].serialNo;
+                                                    toConfig["deviceType"] = zones[i].devices[j].deviceType;
+                                                }
+                                            }
+                                        } else {
+                                            for (var j = 0; j < devices.length; j++) {
+                                                if (devices[j].deviceType == "VA01") {
+                                                    toConfig["serialNo"] = zones[i].devices[j].serialNo;
+                                                    toConfig["deviceType"] = zones[i].devices[j].deviceType;
+                                                }
+                                            }
+                                        }
+
+                                        self.log("Found new Zone: " + toConfig.name + " (" + toConfig.id + " | " + toConfig.deviceType + ")")
                                         zonesArray.push(toConfig);
 
                                     } else {
