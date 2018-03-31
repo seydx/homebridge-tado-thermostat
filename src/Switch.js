@@ -197,7 +197,10 @@ class SWITCH {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 var req = https.request(options, function(res) {
@@ -221,7 +224,10 @@ class SWITCH {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.roomids[i] + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'PUT'
+                    method: 'PUT',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 var post_data = JSON.stringify({
