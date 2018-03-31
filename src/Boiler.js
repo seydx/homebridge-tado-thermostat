@@ -252,7 +252,10 @@ class BOILER {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'PUT'
+                    method: 'PUT',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 var post_data = JSON.stringify({
@@ -307,7 +310,10 @@ class BOILER {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'PUT'
+                    method: 'PUT',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 var post_data = JSON.stringify({
@@ -365,7 +371,10 @@ class BOILER {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'PUT'
+                    method: 'PUT',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 var post_data = JSON.stringify({
@@ -403,7 +412,10 @@ class BOILER {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 var req = https.request(options, function(res) {
@@ -440,7 +452,10 @@ class BOILER {
             var options = {
                 host: 'my.tado.com',
                 path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                method: 'PUT'
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             };
 
             var post_data = JSON.stringify({
