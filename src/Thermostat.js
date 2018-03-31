@@ -327,7 +327,10 @@ class THERMOSTAT {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'PUT'
+                    method: 'PUT',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 var post_data = JSON.stringify({
@@ -362,7 +365,10 @@ class THERMOSTAT {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'PUT'
+                    method: 'PUT',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 var setTemp = self.currenttemp + self.heatValue;
@@ -416,7 +422,10 @@ class THERMOSTAT {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'PUT'
+                    method: 'PUT',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 var setTemp = self.currenttemp - self.coolValue;
@@ -470,7 +479,10 @@ class THERMOSTAT {
                 var options = {
                     host: 'my.tado.com',
                     path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+	                    'Content-Type': 'application/json'
+                    }
                 };
 
                 if (self.delaytimer > 0) {
@@ -535,7 +547,10 @@ class THERMOSTAT {
             var options = {
                 host: 'my.tado.com',
                 path: "/api/v2/homes/" + self.homeID + "/zones/" + self.zoneID + "/overlay?username=" + self.username + "&password=" + self.password,
-                method: 'PUT'
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             };
 
             var post_data = JSON.stringify({
@@ -552,6 +567,7 @@ class THERMOSTAT {
             });
 
             var req = https.request(options, function(res) {
+	            res.setEncoding('utf8');
                 self.log(self.displayName + ": " + value);
             });
 
